@@ -1,0 +1,23 @@
+[user]
+  name = Issei Naruta
+  email = mimitako@gmail.com
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+  interactive = auto
+  grep = auto
+[alias]
+  co = checkout
+  st = status
+  di = diff
+  br = branch
+  show-root = rev-parse --show-toplevel
+  stat = log --stat
+  ca = commit -va
+[core]
+  editor = vim
+  pager = less
+  excludesfile = ~/.gitignore_global
+  sparsecheckout = true
+
