@@ -9,7 +9,6 @@ export EDITOR=$VIM_PREFIX/bin/vim
 export PATH=$HOMEBREW_PREFIX/bin:$PATH
 export PATH=/usr/local/bin:$PATH
 export LESS='-R'
-export VIMRUNTIME=$VIM_PREFIX/share/vim/vim7?
 
 ############################################################
 # aliases
