@@ -151,7 +151,13 @@ local COMMAND_TIME=""
 autoload -Uz vcs_info
 zstyle ':vcs_info:*' formats '(%s)-[%b]'
 zstyle ':vcs_info:*' actionformats '(%s)-[%b|%a]'
-RPROMPT="%1(v|%F{green}%1v%f|) %F{blue}[%*]%f"
+#RPROMPT="%1(v|%F{green}%1v%f|) %F{blue}[%*]%f"
+
+# https://www.themoderncoder.com/add-git-branch-information-to-your-zsh-prompt/
+function precmd() {
+  vcs_info
+}
+RPROMPT=\$vcs_info_msg_0_
 
 if [ -x $HOMEBREW_PREFIX/bin/growlnotify ]; then
   function precmd_growl() {
