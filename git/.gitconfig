@@ -1,11 +1,11 @@
 [user]
-  name = Issei Naruta
-  email = mimitako@gmail.com
+	name = Issei Naruta
+	email = naruta@cookpad.com
 [color]
-  diff = auto
-  status = auto
-  branch = auto
-  interactive = auto
+	diff = auto
+	status = auto
+	branch = auto
+	interactive = auto
   grep = auto
 [alias]
   co = checkout
@@ -16,8 +16,29 @@
   stat = log --stat
   ca = commit -va
 [core]
-  editor = vim
-  pager = less
-  excludesfile = ~/.gitignore_global
-  sparsecheckout = true
-
+	editor = vim
+	pager = less
+	excludesfile = ~/.gitignore_global
+	sparsecheckout = true
+[hub]
+	host = ghe.ckpd.co
+[github "ghe.ckpd.co"]
+	user = issei-naruta
+[alias]
+	recent = "!$SHELL -c ' \n\
+    n=1 \n\
+    1=\"${1:-$n}\" \n\
+    git --no-pager log --since=\"$1\".days --author=\"`git config user.name`\" --pretty=format:\"%h - %ar : %s\" --branches --reverse\n\
+    ' __dummy__"
+  fetch-pulls = "fetch origin +refs/pull/*:refs/remotes/pull/*"
+[filter "media"]
+	clean = git-media-clean %f
+	smudge = git-media-smudge %f
+[push]
+	default = simple
+[merge "mergepbx"]
+	name = Xcode project files merger
+	driver = mergepbx %O %A %B
+	note = auto-generated configuration by cpad2 upgrade
+[ghq]
+  root = ~/src
