@@ -7,7 +7,7 @@ fi
 export LANG=ja_JP.UTF-8
 export EDITOR=$VIM_PREFIX/bin/vim
 export PATH=$HOMEBREW_PREFIX/bin:$PATH
-export PATH=/usr/local/bin:$PATH
+export PATH=/usr/local/bin:/opt/local/bin:$PATH
 export LESS='-R'
 
 ############################################################
@@ -153,6 +153,40 @@ zstyle ':vcs_info:*' formats '(%s)-[%b]'
 zstyle ':vcs_info:*' actionformats '(%s)-[%b|%a]'
 RPROMPT="%1(v|%F{green}%1v%f|) %F{blue}[%*]%f"
 
+if [ -x $HOMEBREW_PREFIX/bin/growlnotify ]; then
+  function precmd_growl() {
+    if [ "$TERM" = "screen" ] ; then
+      echo -ne "\ek$(basename $(pwd))\e\\"
+    fi
+
+    psvar=()
+    LANG=en_US.UTF-8 vcs_info
+    [[ -n "$vcs_info_msg_0_" ]] && psvar[1]="$vcs_info_msg_0_"
+
+    if [ "$COMMAND_TIME" -ne "0" ] ; then
+      local d=`date +%s`
+      d=`expr $d - $COMMAND_TIME`
+      if [ "$d" -ge "10" ] ; then
+        COMMAND="$COMMAND "
+        growlnotify -t "${${(s: :)COMMAND}[1]}" -m "$COMMAND"
+      fi
+    fi
+    COMMAND="0"
+    COMMAND_TIME="0"
+  }
+  precmd_functions+=precmd_growl
+fi
+
+function preexec () {
+  COMMAND="${1}"
+  if [ "$TERM" = "screen" ] ; then
+    echo -ne "\ek${COMMAND%% *}\e\\"
+  fi
+  if [ "`perl -e 'print($ARGV[0]=~/ssh|^vi|^git|^script\/(?:console|server)/)' $COMMAND`" -ne 1 ] ; then
+    COMMAND_TIME=`date +%s`
+  fi
+}
+
 case ${UID} in
 0)
   PROMPT="%B%{${fg[red]}%}%/#%{${reset_color}%}%b "
@@ -169,6 +203,24 @@ case ${UID} in
     PROMPT="%{${fg[white]}%}${HOST%%.*} ${PROMPT}"
   ;;
 esac
+
+if [ -f $HOME/.zsh/zaw/zaw.zsh ]; then
+  source $HOME/.zsh/zaw/zaw.zsh
+  #bindkey '^G' zaw-git-files
+  bindkey '^X^G' zaw-git-all-files
+fi
+
+### z.sh
+if [[ -s `brew --prefix`/etc/profile.d/z.sh ]]; then
+  _Z_CMD='j'
+  source `brew --prefix`/etc/profile.d/z.sh
+  function precmd_z () {
+    _z --add "$(pwd -P)"
+  }
+  precmd_functions+=precmd_z
+  # なぜか complete_aliases が効かないため
+  #compdef _z j
+fi
 
 # rbenv
 export PATH=$HOME/.rbenv/bin:$PATH
@@ -204,10 +256,35 @@ fi
 # source "$HOME/google-cloud-sdk/completion.zsh.inc"
 
 # pyenv
-export PYENV_ROOT=$HOME/.pyenv
-export PATH=$PYENV_ROOT/bin:$PATH
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
+if `which pyenv > /dev/null`; then
+  export PYENV_ROOT=$HOME/.pyenv
+  export PATH=$PYENV_ROOT/bin:$PATH
+  eval "$(pyenv init -)"
+  #eval "$(pyenv virtualenv-init -)"
+fi
+
+# node
+export PATH=$HOME/.nodebrew/current/bin:$PATH
+
+# vscode
+if [ -d /Applications/Visual\ Studio\ Code.app ]; then
+  export PATH=/Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin:$PATH
+fi
+
+# ghq
+function peco-src () {
+  local selected_dir=$(ghq list -p | peco --query "$LBUFFER")
+  if [ -n "$selected_dir" ]; then
+    BUFFER="cd ${selected_dir}"
+    zle accept-line
+  fi
+  zle clear-screen
+}
+zle -N peco-src
+bindkey '^]' peco-src
+
+# tmux-cssh
+export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
 
 if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
