@@ -2,7 +2,11 @@ VIM_PREFIX=/usr
 if [ -d /opt/brew ]; then
   HOMEBREW_PREFIX=/opt/brew
 else
-  HOMEBREW_PREFIX=/usr/local
+  if [ -d /opt/homebrew ]; then
+    HOMEBREW_PREFIX=/opt/homebrew
+  else
+    HOMEBREW_PREFIX=/usr/local
+  fi
 fi
 export LANG=ja_JP.UTF-8
 export EDITOR=$VIM_PREFIX/bin/vim
@@ -230,7 +234,9 @@ fi
 
 # rbenv
 export PATH=$HOME/.rbenv/bin:$PATH
-eval "$(rbenv init - zsh)"
+if [ -x $HOME/.rbenv/bin/rbenv ]; then
+  eval "$(rbenv init - zsh)"
+fi
 
 # awssh
 export AWSSH_PERCOL=$HOMEBREW_PREFIX/bin/peco
