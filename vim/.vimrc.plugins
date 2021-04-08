@@ -112,12 +112,6 @@ NeoBundle 'https://github.com/Shougo/vimshell.git'
 nnoremap <silent> <Space>n :NERDTreeFind<CR>
 
 "================================================================================
-" Puppet-Syntax-Highlighting
-"================================================================================
-NeoBundle 'Puppet-Syntax-Highlighting'
-au BufNewFile,BufRead *.pp set filetype=puppet
-
-"================================================================================
 " Slim
 "================================================================================
 au BufNewFile,BufRead *.slim set filetype=slim
