@@ -278,6 +278,9 @@ fi
 # node
 export PATH=$HOME/.nodebrew/current/bin:$PATH
 
+# deno
+export PATH=$HOME/.deno/bin:$PATH
+
 # vscode
 if [ -d /Applications/Visual\ Studio\ Code.app ]; then
   export PATH=/Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin:$PATH
@@ -297,6 +300,9 @@ bindkey '^]' peco-src
 
 # tmux-cssh
 export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
+
+# rancher
+export PATH=$HOME/.rd/bin:$PATH
 
 if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
