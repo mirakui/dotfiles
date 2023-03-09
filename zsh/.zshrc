@@ -1,24 +1,34 @@
+# Enable startup time profiler:
+# zmodload zsh/zprof
+
 VIM_PREFIX=/usr
 if [ -d /opt/brew ]; then
   HOMEBREW_PREFIX=/opt/brew
-else
   if [ -d /opt/homebrew ]; then
     HOMEBREW_PREFIX=/opt/homebrew
   else
     HOMEBREW_PREFIX=/usr/local
   fi
 fi
+
+if [ -x ${HOMEBREW_PREFIX}/bin/nvim ]; then
+  VIM_PATH=/usr/bin/vim
+else
+  VIM_PATH=${HOMEBREW_PREFIX}/bin/nvim
+fi
+
 export LANG=ja_JP.UTF-8
-export EDITOR=$VIM_PREFIX/bin/vim
+export EDITOR=$VIM_PATH
 export PATH=$HOMEBREW_PREFIX/bin:$PATH
 export PATH=/usr/local/bin:/opt/local/bin:$PATH
 export LESS='-R'
+
 
 ############################################################
 # aliases
 ############################################################
 setopt complete_aliases
-alias vi='vim'
+alias vi=$VIM_PATH
 alias ls='ls -lahFG'
 alias where='command -v'
 alias du='du -h'
@@ -34,8 +44,8 @@ alias br='gf branch'
 alias co='git checkout'
 alias gg='gf grep -n -E'
 alias gls='git ls-files'
-alias gp='git pull --rebase origin master'
-alias gpp='git pull --rebase origin master && git push origin master'
+function gp() { BRANCH=$(git rev-parse --abbrev-ref HEAD); git pull --rebase origin $BRANCH }
+function gpp() { BRANCH=$(git rev-parse --abbrev-ref HEAD); git pull --rebase origin $BRANCH && git push origin $BRANCH }
 alias tmux-chdir-here="pwd | xargs tmux set -g default-path"
 alias tmux-copy-buffer="tmux show-buffer | pbcopy"
 alias cds='cd $HOME/src'
@@ -43,13 +53,10 @@ alias cdsc='cd $HOME/scratch'
 alias be='bundle exec'
 alias bc='bundle console'
 alias bo='bundle open'
-alias ppd='git pull --rebase origin master && git push origin master && sleep 5 && bundle exec cap puppet deploy'
 alias c='tmux-cssh'
 alias i='i2cssh'
 alias a='$HOME/src/awssh/exe/awssh'
 alias gl='git ls-files'
-alias zbx='envchain zabbix zabbix_graph'
-alias icap='envchain gpg bundle exec cap'
 alias chrome-canary="/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary"
 
 # https://gist.github.com/3103708
@@ -221,9 +228,9 @@ if [ -f $HOME/.zsh/zaw/zaw.zsh ]; then
 fi
 
 ### z.sh
-if [[ -s `brew --prefix`/etc/profile.d/z.sh ]]; then
+if [[ -s $HOMEBREW_PREFIX/etc/profile.d/z.sh ]]; then
   _Z_CMD='j'
-  source `brew --prefix`/etc/profile.d/z.sh
+  source $HOMEBREW_PREFIX/etc/profile.d/z.sh
   function precmd_z () {
     _z --add "$(pwd -P)"
   }
@@ -307,3 +314,5 @@ export PATH=$HOME/.rd/bin:$PATH
 if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
 
+# Enable startup time profiler:
+# zprof
