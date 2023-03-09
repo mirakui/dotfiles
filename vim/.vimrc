@@ -1,4 +1,9 @@
 " vim:set filetype=vim:
+
+" profile start ~/.vim/profile.log
+" profile func *
+" profile file *
+
 set nocompatible               " be iMproved
 filetype off                   " required!
 
@@ -260,3 +265,6 @@ endif
 if filereadable(expand('$HOME/.vimrc.local'))
   source ~/.vimrc.local
 endif
+
+" profile pause
+" noautocmd qall!

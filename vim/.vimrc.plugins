@@ -121,12 +121,14 @@ au BufNewFile,BufRead *.slim set filetype=slim
 "================================================================================
 " http://qiita.com/methane/items/4905f40e4772afec3e60
 
-let g:gofmt_command = 'goimports'
-set rtp+=${GOROOT}/misc/vim
-set rtp+=${GOPATH}/src/github.com/nsf/gocode/vim
-au BufWritePre *.go Fmt
-au BufNewFile,BufRead *.go set sw=4 noexpandtab ts=4 sts=4 nolist
-au FileType go compiler go
+" 以下、MacVim で遅すぎるのでコメントアウト
+" ====
+" let g:gofmt_command = 'goimports'
+" set rtp+=${GOROOT}/misc/vim
+" set rtp+=${GOPATH}/src/github.com/nsf/gocode/vim
+" au BufWritePre *.go Fmt
+" au BufNewFile,BufRead *.go set sw=4 noexpandtab ts=4 sts=4 nolist
+" au FileType go compiler go
 
 "================================================================================
 " Rust
