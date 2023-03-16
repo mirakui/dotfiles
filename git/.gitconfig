@@ -36,6 +36,7 @@
 	smudge = git-media-smudge %f
 [push]
 	default = simple
+  autoSetupRemote = true
 [merge "mergepbx"]
 	name = Xcode project files merger
 	driver = mergepbx %O %A %B
