@@ -12,9 +12,9 @@ if [ -d /opt/brew ]; then
 fi
 
 if [ -x ${HOMEBREW_PREFIX}/bin/nvim ]; then
-  VIM_PATH=/usr/bin/vim
-else
   VIM_PATH=${HOMEBREW_PREFIX}/bin/nvim
+else
+  VIM_PATH=/usr/bin/vim
 fi
 
 export LANG=ja_JP.UTF-8
@@ -38,6 +38,7 @@ alias vs='vi ~/.ssh/config'
 alias vv='vi --clean ~/.vimrc'
 alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
+alias vw='vi ~/.config/wezterm/wezterm.lua'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 alias st='gf status'
 alias br='gf branch'
