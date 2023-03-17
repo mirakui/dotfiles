@@ -1,0 +1,19 @@
+#!/bin/bash -e
+
+ROLE_NAME=$1
+EXEC_ARGS=${@:2}
+ACCOUNT_ID=`aws sts get-caller-identity | jq .Account -r`
+ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
+SESSION_NAME="${USER}.$(date '+%Y%m%d.%H%M%S')"
+
+{
+  read -r AWS_ACCESS_KEY_ID
+  read -r AWS_SECRET_ACCESS_KEY
+  read -r AWS_SESSION_TOKEN
+} < <(aws sts assume-role --role-arn=${ROLE_ARN} --role-session-name=${SESSION_NAME} | jq -r .Credentials.AccessKeyId,.Credentials.SecretAccessKey,.Credentials.SessionToken)
+
+AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
+exec $EXEC_ARGS
+
