@@ -29,6 +29,8 @@ return {
   font = wezterm.font("Monaco"),
   use_ime = true,
   font_size = 12.0,
+  initial_rows = 50,
+  initial_cols = 180,
   color_scheme = "OneHalfDark", -- https://wezfurlong.org/wezterm/colorschemes/index.html
   window_background_opacity = 0.8,
   hide_tab_bar_if_only_one_tab = true,
