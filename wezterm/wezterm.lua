@@ -31,12 +31,11 @@ return {
   font_size = 12.0,
   initial_rows = 50,
   initial_cols = 180,
-  color_scheme = "OneHalfDark", -- https://wezfurlong.org/wezterm/colorschemes/index.html
+  color_scheme = "Operator Mono Dark", -- https://wezfurlong.org/wezterm/colorschemes/index.html
+
   window_background_opacity = 0.8,
   hide_tab_bar_if_only_one_tab = true,
   adjust_window_size_when_changing_font_size = false,
-
-  enable_cwd_in_title = true,
 
   keys = {
     {
@@ -58,8 +57,6 @@ return {
       mods = 'ALT|CMD',
       action = wezterm.action.ShowDebugOverlay
     },
-
+    -- TODO: cmd+u で Opacity をいじりたい
   },
-
-  window_update_interval = 1000,
 }

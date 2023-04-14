@@ -43,3 +43,8 @@
 	note = auto-generated configuration by cpad2 upgrade
 [ghq]
   root = ~/src
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
