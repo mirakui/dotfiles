@@ -2,13 +2,13 @@
 # zmodload zsh/zprof
 
 VIM_PREFIX=/usr
+
 if [ -d /opt/brew ]; then
   HOMEBREW_PREFIX=/opt/brew
-  if [ -d /opt/homebrew ]; then
-    HOMEBREW_PREFIX=/opt/homebrew
-  else
-    HOMEBREW_PREFIX=/usr/local
-  fi
+elif [ -d /opt/homebrew ]; then
+  HOMEBREW_PREFIX=/opt/homebrew
+else
+  HOMEBREW_PREFIX=/usr/local
 fi
 
 if [ -x ${HOMEBREW_PREFIX}/bin/nvim ]; then
@@ -308,7 +308,7 @@ function __my_preexec_end_timetrack() {
         ;;
       "osascript" )
         # echo "$message" | growlnotify -n "ZSH timetracker" --appIcon Terminal
-        osascript -e "display notification \"$message\" with title \"zsh\""
+        #osascript -e "display notification \"$message\" with title \"zsh\""
         ;;
       "notify-send" )
         notify-send "ZSH timetracker" "$message"
@@ -402,6 +402,12 @@ export PATH=$HOME/.rd/bin:$PATH
 
 if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
+
+# Android
+export ANDROID_SDK_ROOT=~/Library/Android/sdk
+export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
+export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
+export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
 
 # Enable startup time profiler:
 # zprof
