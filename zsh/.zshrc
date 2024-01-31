@@ -40,8 +40,7 @@ alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
 alias vw='vi ~/.config/wezterm/wezterm.lua'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
-alias st='gf status'
-alias br='gf branch'
+alias st='gf status -sbu'
 alias co='git checkout'
 alias gg='gf grep -n -E'
 alias gls='git ls-files'
@@ -339,15 +338,27 @@ export AWSSH_PERCOL=$HOMEBREW_PREFIX/bin/peco
 export AWSSH_CSSH=tmux-cssh
 
 # peco
-function git-ls-peco-open() {
-  local files=`git ls-files | peco`
+function peco-git-ls-open() {
+  local files=`git ls-files | peco --prompt "git ls-files>"`
   if [ -n "$files" ]; then
-    BUFFER="vi ${files}"
-    zle accept-line
+    #BUFFER="vi ${files}"
+    #zle accept-line
+    BUFFER="${BUFFER}${files}"
+    zle redisplay
   fi
 }
-zle -N git-ls-peco-open
-bindkey '^G' git-ls-peco-open
+zle -N peco-git-ls-open
+bindkey '^G' peco-git-ls-open
+
+function peco-git-change-branch() {
+  local branch=`git branch | peco --prompt "git branch>" | tr -d ' *'`
+  if [ -n "$branch" ]; then
+    BUFFER="${BUFFER}${branch}"
+    zle redisplay
+  fi
+}
+zle -N peco-git-change-branch
+bindkey '^G^B' peco-git-change-branch
 
 # golang
 export GOPATH=$HOME/gocode
@@ -404,10 +415,12 @@ if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
 
 # Android
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk/Contents/Home
 export ANDROID_SDK_ROOT=~/Library/Android/sdk
 export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
 export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
 export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
 
 # Enable startup time profiler:
 # zprof
