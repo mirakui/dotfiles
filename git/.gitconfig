@@ -48,3 +48,12 @@
 	process = git-lfs filter-process
 	required = true
 	clean = git-lfs clean -- %f
+[rebase]
+	autostash = true
+	abbreviateCommands = true
+	autosquash = true
+[credential]
+	helper = 
+	helper = /usr/local/share/gcm-core/git-credential-manager
+[credential "https://dev.azure.com"]
+	useHttpPath = true

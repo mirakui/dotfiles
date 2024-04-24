@@ -40,7 +40,8 @@ alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
 alias vw='vi ~/.config/wezterm/wezterm.lua'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
-alias st='gf status -sbu'
+#alias st='gf status -sbu'
+alias st='gf status'
 alias co='git checkout'
 alias gg='gf grep -n -E'
 alias gls='git ls-files'
@@ -366,12 +367,7 @@ export GOROOT=$HOMEBREW_PREFIX/opt/go/libexec
 export PATH=$GOPATH/bin:$PATH
 
 # gcutil
-# https://cloud.google.com/sdk/#Quick_Start
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f "$HOME/google-cloud-sdk/path.zsh.inc" ]; then
-  source "$HOME/google-cloud-sdk/path.zsh.inc"
-fi
-# The next line enables shell command completion for gcloud.
+# https://cloud.google.com/sdk/#Quick_Start# The next line enables shell command completion for gcloud.
 # source "$HOME/google-cloud-sdk/completion.zsh.inc"
 
 # pyenv
@@ -411,9 +407,6 @@ export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
 # rancher
 export PATH=$HOME/.rd/bin:$PATH
 
-if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
-if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
-
 # Android
 export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk/Contents/Home
 export ANDROID_SDK_ROOT=~/Library/Android/sdk
@@ -422,5 +415,29 @@ export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
 export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
 function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
 
+# Volta
+if [ -d $HOME/.volta ]; then
+  export VOLTA_HOME="$HOME/.volta"
+  export PATH="$VOLTA_HOME/bin:$PATH"
+fi
+
+# PostgreSQL
+if [ -d $HOMEBREW_PREFIX/opt/libpq/bin ]; then
+  export PATH="$HOMEBREW_PREFIX/opt/libpq/bin:$PATH"
+fi
+
+# gcloud
+export GCLOUD_SDK_DIR="/opt/google-cloud-sdk"
+if [ -f "$GCLOUD_SDK_DIR/path.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/path.zsh.inc"; fi
+if [ -f "$GCLOUD_SDK_DIR/completion.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/completion.zsh.inc"; fi
+
 # Enable startup time profiler:
 # zprof
+
+if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
+if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
+
+
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+export PATH="/Users/naruta/.rd/bin:$PATH"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
