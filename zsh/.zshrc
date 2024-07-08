@@ -86,9 +86,14 @@ alias zmv='noglob zmv'
 # prompt
 ############################################################
 
-autoload promptinit
-promptinit
-prompt adam2
+if [ -x "$HOMEBREW_PREFIX/bin/starship" ]; then
+  # https://github.com/starship/starship
+  eval "$(starship init zsh)"
+else
+  autoload promptinit
+  promptinit
+  prompt adam2
+fi
 
 
 ############################################################
@@ -138,12 +143,6 @@ setopt COMPLETE_IN_WORD
 
 zstyle ':completion:*' list-colors ''
 
-
-############################################################
-# auto complete
-############################################################
-
-
 ## keep background processes at full speed
 setopt NOBGNICE
 ## restart running processes on exit
@@ -156,182 +155,38 @@ autoload -U colors
 colors
 
 ############################################################
-# precmd / preexec
-############################################################
-local COMMAND=""
-local COMMAND_TIME=""
-autoload -Uz vcs_info
-zstyle ':vcs_info:*' formats '(%s)-[%b]'
-zstyle ':vcs_info:*' actionformats '(%s)-[%b|%a]'
-#RPROMPT="%1(v|%F{green}%1v%f|) %F{blue}[%*]%f"
-
-# https://www.themoderncoder.com/add-git-branch-information-to-your-zsh-prompt/
-function precmd() {
-  vcs_info
-}
-RPROMPT=\$vcs_info_msg_0_
-
-if [ -x $HOMEBREW_PREFIX/bin/growlnotify ]; then
-  function precmd_growl() {
-    if [ "$TERM" = "screen" ] ; then
-      echo -ne "\ek$(basename $(pwd))\e\\"
-    fi
-
-    psvar=()
-    LANG=en_US.UTF-8 vcs_info
-    [[ -n "$vcs_info_msg_0_" ]] && psvar[1]="$vcs_info_msg_0_"
-
-    if [ "$COMMAND_TIME" -ne "0" ] ; then
-      local d=`date +%s`
-      d=`expr $d - $COMMAND_TIME`
-      if [ "$d" -ge "10" ] ; then
-        COMMAND="$COMMAND "
-        growlnotify -t "${${(s: :)COMMAND}[1]}" -m "$COMMAND"
-      fi
-    fi
-    COMMAND="0"
-    COMMAND_TIME="0"
-  }
-  precmd_functions+=precmd_growl
-fi
-
-function preexec () {
-  COMMAND="${1}"
-  if [ "$TERM" = "screen" ] ; then
-    echo -ne "\ek${COMMAND%% *}\e\\"
-  fi
-  if [ "`perl -e 'print($ARGV[0]=~/ssh|^vi|^git|^script\/(?:console|server)/)' $COMMAND`" -ne 1 ] ; then
-    COMMAND_TIME=`date +%s`
-  fi
-}
-
-case ${UID} in
-0)
-  PROMPT="%B%{${fg[red]}%}%/#%{${reset_color}%}%b "
-  PROMPT2="%B%{${fg[red]}%}%_#%{${reset_color}%}%b "
-  SPROMPT="%B%{${fg[red]}%}%r is correct? [n,y,a,e]:%{${reset_color}%}%b "
-  [ -n "${REMOTEHOST}${SSH_CONNECTION}" ] &&
-    PROMPT="%{${fg[white]}%}${HOST%%.*} ${PROMPT}"
-  ;;
-*)
-  PROMPT="%{${fg[red]}%}%/%%%{${reset_color}%} "
-  PROMPT2="%{${fg[red]}%}%_%%%{${reset_color}%} "
-  SPROMPT="%{${fg[red]}%}%r is correct? [n,y,a,e]:%{${reset_color}%} "
-  [ -n "${REMOTEHOST}${SSH_CONNECTION}" ] &&
-    PROMPT="%{${fg[white]}%}${HOST%%.*} ${PROMPT}"
-  ;;
-esac
-
-if [ -f $HOME/.zsh/zaw/zaw.zsh ]; then
-  source $HOME/.zsh/zaw/zaw.zsh
-  #bindkey '^G' zaw-git-files
-  bindkey '^X^G' zaw-git-all-files
-fi
-
-### z.sh
-if [[ -s $HOMEBREW_PREFIX/etc/profile.d/z.sh ]]; then
-  _Z_CMD='j'
-  source $HOMEBREW_PREFIX/etc/profile.d/z.sh
-  function precmd_z () {
-    _z --add "$(pwd -P)"
-  }
-  precmd_functions+=precmd_z
-  # なぜか complete_aliases が効かないため
-  #compdef _z j
-fi
-
-############################################################
-# notification
-# https://github.com/unasuke/dotfiles/blob/ffb45c7b13f6f255b667a6140b026a8c0eb5982f/zsh/.zsh.d/darwin.zsh
+# AWS
 ############################################################
 
-__timetrack_threshold=5 # seconds
-read -r -d '' __timetrack_ignore_progs <<EOF
-less
-emacs vi vim
-ssh mosh telnet nc netcat
-gdb
-EOF
-
-export __timetrack_threshold
-export __timetrack_ignore_progs
-
-function __my_preexec_start_timetrack() {
-  local command=$1
-
-  export __timetrack_start=`date +%s`
-  export __timetrack_command="$command"
+function aws-rds-ssh-tunnel() {
+  bastion_instance_id=$(
+    aws ec2 describe-instances \
+      --filters "Name=instance-state-name,Values=running" \
+      --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key=='Name'].Value | [0]}" \
+    | jq -r '.[][] | "\(.ID) \(.Name)"' \
+    | fzf \
+    | cut -d' ' -f1
+  )
+  rds_endpoint=$(
+    aws rds describe-db-instances \
+      --query 'DBInstances[?DBInstanceStatus==`available`].[Endpoint.Address]' \
+      --output text \
+    | fzf
+  )
+  aws ec2-instance-connect ssh \
+    --ssh-port=19922 \
+    --local-forwarding 15432:${rds_endpoint}:5432 \
+    --instance-id=${bastion_instance_id}
 }
 
-function __my_preexec_end_timetrack() {
-  local exec_time
-  local command=$__timetrack_command
-  local prog=$(echo $command|awk '{print $1}')
-  local notify_method
-  local message
-
-  export __timetrack_end=`date +%s`
-
-  if test -n "${REMOTEHOST}${SSH_CONNECTION}"; then
-    notify_method="remotehost"
-  elif which osascript >/dev/null 2>&1; then
-    notify_method="osascript"
-  elif which notify-send >/dev/null 2>&1; then
-    notify_method="notify-send"
-  else
-    return
-  fi
-
-  if [ -z "$__timetrack_start" ] || [ -z "$__timetrack_threshold" ]; then
-    return
-  fi
-
-  for ignore_prog in $(echo $__timetrack_ignore_progs); do
-    [ "$prog" = "$ignore_prog" ] && return
-  done
-
-  exec_time=$((__timetrack_end-__timetrack_start))
-  if [ -z "$command" ]; then
-    command="<UNKNOWN>"
-  fi
-
-  message="Command finished!\nTime: $exec_time seconds\nCOMMAND: $command"
-
-  if [ "$exec_time" -ge "$__timetrack_threshold" ]; then
-    case $notify_method in
-      "remotehost" )
-        # show trigger string
-        echo -e "\e[0;30m==ZSH LONGRUN COMMAND TRACKER==$(hostname -s): $command ($exec_time seconds)\e[m"
-        sleep 1
-        # wait 1 sec, and then delete trigger string
-        echo -e "\e[1A\e[2K"
-        ;;
-      "osascript" )
-        # echo "$message" | growlnotify -n "ZSH timetracker" --appIcon Terminal
-        #osascript -e "display notification \"$message\" with title \"zsh\""
-        ;;
-      "notify-send" )
-        notify-send "ZSH timetracker" "$message"
-        ;;
-    esac
-  fi
-
-  unset __timetrack_start
-  unset __timetrack_command
-}
-
-if which osascript >/dev/null 2>&1 ||
-  which notify-send >/dev/null 2>&1 ||
-  test -n "${REMOTEHOST}${SSH_CONNECTION}"; then
-  add-zsh-hook preexec __my_preexec_start_timetrack
-  add-zsh-hook precmd __my_preexec_end_timetrack
-fi
-
+############################################################
+# external environments
+############################################################
 
 # rbenv
 export PATH=$HOME/.rbenv/bin:$PATH
 if [ -x $HOME/.rbenv/bin/rbenv ]; then
-  eval "$(rbenv init - zsh)"
+eval "$(rbenv init - zsh)"
 fi
 
 # awssh
