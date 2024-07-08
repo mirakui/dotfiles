@@ -1,10 +1,15 @@
-require("config.lazy")
+-- disable netrw at the very start of init.lua for nvim-tree
+-- https://github.com/nvim-tree/nvim-tree.lua?tab=readme-ov-file#setup
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
 
 -- 行番号を表示
 vim.opt.number = true
 
+-- enable 24-bit colour
+vim.opt.termguicolors = true
 -- カラースキームを設定
-vim.cmd('colorscheme desert')
+-- vim.cmd('colorscheme desert')
 
 -- インデント設定
 vim.opt.expandtab = true
@@ -22,4 +27,9 @@ vim.api.nvim_set_keymap('n', 'to', ':tabe ', { noremap = true })
 vim.api.nvim_set_keymap('n', 'tn', ':tabnext<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', 'tp', ':tabNext<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', 'td', ':tabclose<CR>', { noremap = true, silent = true })
+
+-- nvim-tree
+vim.api.nvim_set_keymap('n', '<Space>n', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
+
+require("config.lazy")
 
