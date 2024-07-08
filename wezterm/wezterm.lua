@@ -26,9 +26,11 @@ wezterm.on(
 )
 
 return {
-  font = wezterm.font("Monaco"),
+  -- https://www.nerdfonts.com/
+  -- brew install mononoki-nerd-font
+  font = wezterm.font("Mononoki Nerd Font"),
   use_ime = true,
-  font_size = 12.0,
+  font_size = 13.0,
   initial_rows = 50,
   initial_cols = 180,
   color_scheme = "Operator Mono Dark", -- https://wezfurlong.org/wezterm/colorschemes/index.html
