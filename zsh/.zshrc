@@ -158,7 +158,23 @@ colors
 # AWS
 ############################################################
 
-function aws-rds-ssh-tunnel() {
+function aws-ssh() {
+  local rds_flag=false
+  local bastion_instance_id
+  local rds_endpoint
+  local ssh_port=19922
+  local rds_local_port=15432
+  local rds_remote_port=5432
+
+  for arg in "$@"; do
+    case "$arg" in
+      --rds) rds_flag=true ;;
+      -p=*) ssh_port="${arg#*=}" ;;
+      --rds-local-port=*) rds_local_port="${arg#*=}" ;;
+      --rds-remote-port=*) rds_remote_port="${arg#*=}" ;;
+    esac
+  done
+
   bastion_instance_id=$(
     aws ec2 describe-instances \
       --filters "Name=instance-state-name,Values=running" \
@@ -167,16 +183,23 @@ function aws-rds-ssh-tunnel() {
     | fzf \
     | cut -d' ' -f1
   )
-  rds_endpoint=$(
-    aws rds describe-db-instances \
-      --query 'DBInstances[?DBInstanceStatus==`available`].[Endpoint.Address]' \
-      --output text \
-    | fzf
-  )
-  aws ec2-instance-connect ssh \
-    --ssh-port=19922 \
-    --local-forwarding 15432:${rds_endpoint}:5432 \
-    --instance-id=${bastion_instance_id}
+
+  if $rds_flag; then
+    rds_endpoint=$(
+      aws rds describe-db-instances \
+        --query 'DBInstances[?DBInstanceStatus==`available`].[Endpoint.Address]' \
+        --output text \
+      | fzf
+    )
+    aws ec2-instance-connect ssh \
+      --ssh-port=${ssh_port} \
+      --local-forwarding ${rds_local_port}:${rds_endpoint}:${rds_remote_port} \
+      --instance-id=${bastion_instance_id}
+  else
+    aws ec2-instance-connect ssh \
+      --ssh-port=${ssh_port} \
+      --instance-id=${bastion_instance_id}
+  fi
 }
 
 ############################################################
