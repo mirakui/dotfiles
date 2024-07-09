@@ -1,0 +1,39 @@
+#!/bin/bash
+
+rds_flag=false
+ssh_port=19922
+rds_local_port=15432
+rds_remote_port=5432
+
+for arg in "$@"; do
+  case "$arg" in --rds) rds_flag=true ;; -p=*) ssh_port="${arg#*=}" ;;
+    --rds-local-port=*) rds_local_port="${arg#*=}" ;;
+    --rds-remote-port=*) rds_remote_port="${arg#*=}" ;;
+  esac
+done
+
+bastion_instance_id=$(
+  aws ec2 describe-instances \
+    --filters "Name=instance-state-name,Values=running" \
+    --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key=='Name'].Value | [0]}" \
+  | jq -r '.[][] | "\(.ID) \(.Name)"' \
+  | fzf \
+  | cut -d' ' -f1
+)
+
+if $rds_flag; then
+  rds_endpoint=$(
+    aws rds describe-db-instances \
+      --query 'DBInstances[?DBInstanceStatus==`available`].[Endpoint.Address]' \
+      --output text \
+    | fzf
+  )
+  aws ec2-instance-connect ssh \
+    --ssh-port=${ssh_port} \
+    --local-forwarding ${rds_local_port}:${rds_endpoint}:${rds_remote_port} \
+    --instance-id=${bastion_instance_id}
+else
+  aws ec2-instance-connect ssh \
+    --ssh-port=${ssh_port} \
+    --instance-id=${bastion_instance_id}
+fi

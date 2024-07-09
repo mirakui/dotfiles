@@ -21,6 +21,7 @@ export LANG=ja_JP.UTF-8
 export EDITOR=$VIM_PATH
 export PATH=$HOMEBREW_PREFIX/bin:$PATH
 export PATH=/usr/local/bin:/opt/local/bin:$PATH
+export PATH=$HOME/src/dotfiles/bin:$PATH
 export LESS='-R'
 
 
@@ -153,54 +154,6 @@ setopt NO_BEEP
 
 autoload -U colors
 colors
-
-############################################################
-# AWS
-############################################################
-
-function aws-ssh() {
-  local rds_flag=false
-  local bastion_instance_id
-  local rds_endpoint
-  local ssh_port=19922
-  local rds_local_port=15432
-  local rds_remote_port=5432
-
-  for arg in "$@"; do
-    case "$arg" in
-      --rds) rds_flag=true ;;
-      -p=*) ssh_port="${arg#*=}" ;;
-      --rds-local-port=*) rds_local_port="${arg#*=}" ;;
-      --rds-remote-port=*) rds_remote_port="${arg#*=}" ;;
-    esac
-  done
-
-  bastion_instance_id=$(
-    aws ec2 describe-instances \
-      --filters "Name=instance-state-name,Values=running" \
-      --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key=='Name'].Value | [0]}" \
-    | jq -r '.[][] | "\(.ID) \(.Name)"' \
-    | fzf \
-    | cut -d' ' -f1
-  )
-
-  if $rds_flag; then
-    rds_endpoint=$(
-      aws rds describe-db-instances \
-        --query 'DBInstances[?DBInstanceStatus==`available`].[Endpoint.Address]' \
-        --output text \
-      | fzf
-    )
-    aws ec2-instance-connect ssh \
-      --ssh-port=${ssh_port} \
-      --local-forwarding ${rds_local_port}:${rds_endpoint}:${rds_remote_port} \
-      --instance-id=${bastion_instance_id}
-  else
-    aws ec2-instance-connect ssh \
-      --ssh-port=${ssh_port} \
-      --instance-id=${bastion_instance_id}
-  fi
-}
 
 ############################################################
 # external environments
