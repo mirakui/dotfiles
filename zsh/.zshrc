@@ -52,28 +52,20 @@ alias tmux-chdir-here="pwd | xargs tmux set -g default-path"
 alias tmux-copy-buffer="tmux show-buffer | pbcopy"
 alias cds='cd $HOME/src'
 alias cdsc='cd $HOME/scratch'
+alias cddt='cd $HOME/src/dotfiles'
 alias be='bundle exec'
 alias bc='bundle console'
 alias bo='bundle open'
 function c() { code $(git rev-parse --show-toplevel) }
-alias i='i2cssh'
-alias a='$HOME/src/awssh/exe/awssh'
+function cr() { cursor $(git rev-parse --show-toplevel) }
 alias gl='git ls-files'
 alias chrome-canary="/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary"
 
-# https://gist.github.com/3103708
-function git-branches-by-commit-date() {
-  for branch in `git branch -r | grep -v HEAD`; do
-    echo -e `git show --format='%ai %ar by %an' $branch | head -n 1` \t$branch;
-  done | sort -r
-}
-function ssh-config-grep() {cat ~/.ssh/config | grep --color -A1 ${1}}
-function git-show-current-branch() {
-  git rev-parse --abbrev-ref HEAD
-}
-function git-create-temporary-branch() {
-  local bname=`ruby -e 'puts Time.now.strftime("naruta/tmp/%Y%m%d-%H%M%S")'`
-  git checkout -b $bname
+function git-branch-new() {
+  echo -n "branch suffix: "
+  read suffix
+  branch_name="naruta/$(date '+%Y%m%d')_${suffix}"
+  git checkout -b $branch_name
 }
 function git-push-current-branch-to-origin() {
   local bname=`git rev-parse --abbrev-ref HEAD`
@@ -154,6 +146,23 @@ setopt NO_BEEP
 
 autoload -U colors
 colors
+
+############################################################
+# custom environments
+############################################################
+
+function scratch-new() {
+  base_dir=~/scratch
+  today_dir=$(date '+%Y%m%d')
+  if [ -n "$1" ]; then
+    target_dir="${base_dir}/${today_dir}-$1"
+  else
+    target_dir="${base_dir}/${today_dir}"
+  fi
+
+  mkdir -p "${target_dir}"
+  cd "${target_dir}"
+}
 
 ############################################################
 # external environments
