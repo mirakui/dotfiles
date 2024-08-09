@@ -16,7 +16,7 @@
   stat = log --stat
   ca = commit -va
 [core]
-	editor = vim
+	editor = nvim
 	pager = less
 	excludesfile = ~/.gitignore_global
 	sparsecheckout = true
