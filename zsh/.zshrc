@@ -1,3 +1,5 @@
+# Amazon Q pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
 # Enable startup time profiler:
 # zmodload zsh/zprof
 
@@ -79,15 +81,16 @@ alias zmv='noglob zmv'
 # prompt
 ############################################################
 
-if [ -x "$HOMEBREW_PREFIX/bin/starship" ]; then
-  # https://github.com/starship/starship
-  eval "$(starship init zsh)"
-else
-  autoload promptinit
-  promptinit
-  prompt adam2
+if [ "$TERM_PROGRAM" != "WarpTerminal" ]; then
+  if [ -x "$HOMEBREW_PREFIX/bin/starship" ]; then
+    # https://github.com/starship/starship
+    eval "$(starship init zsh)"
+  else
+    autoload promptinit
+    promptinit
+    prompt adam2
+  fi
 fi
-
 
 ############################################################
 # prompt
@@ -167,6 +170,9 @@ function scratch-new() {
 ############################################################
 # external environments
 ############################################################
+
+# gpg
+export GPG_TTY=$TTY
 
 # rbenv
 export PATH=$HOME/.rbenv/bin:$PATH
@@ -248,12 +254,15 @@ export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
 export PATH=$HOME/.rd/bin:$PATH
 
 # Android
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk/Contents/Home
-export ANDROID_SDK_ROOT=~/Library/Android/sdk
-export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
-export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
-export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
+# export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk/Contents/Home
+# export ANDROID_SDK_ROOT=~/Library/Android/sdk
+# export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
+# export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
+# export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+# function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
+
+# Java
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 
 # Volta
 if [ -d $HOME/.volta ]; then
@@ -266,10 +275,18 @@ if [ -d $HOMEBREW_PREFIX/opt/libpq/bin ]; then
   export PATH="$HOMEBREW_PREFIX/opt/libpq/bin:$PATH"
 fi
 
+# MySQL
+if [ -d $HOMEBREW_PREFIX/opt/mysql-client@8.4/bin ]; then
+  export PATH="$HOMEBREW_PREFIX/opt/mysql-client@8.4/bin:$PATH"
+fi
+
 # gcloud
 export GCLOUD_SDK_DIR="/opt/google-cloud-sdk"
 if [ -f "$GCLOUD_SDK_DIR/path.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/path.zsh.inc"; fi
 if [ -f "$GCLOUD_SDK_DIR/completion.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/completion.zsh.inc"; fi
+
+# mise
+export PATH=$HOME/.local/share/mise/shims:$PATH
 
 # Enable startup time profiler:
 # zprof
@@ -281,3 +298,6 @@ if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/naruta/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
+
+# Amazon Q post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"

@@ -57,3 +57,9 @@
 	helper = /usr/local/share/gcm-core/git-credential-manager
 [credential "https://dev.azure.com"]
 	useHttpPath = true
+[commit]
+	gpgsign = true
+[gpg]
+	program = /usr/local/MacGPG2/bin/gpg2
+[init]
+	defaultBranch = main

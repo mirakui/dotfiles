@@ -1,6 +1,4 @@
 {
-  "terminal.integrated.shell.osx": "/bin/zsh",
-  "go.useLanguageServer": true,
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
@@ -10,16 +8,19 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "editor.formatOnSave": true,
   "bookmarks.useWorkaroundForFormatters": true,
+  "editor.accessibilitySupport": "off",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
   "explorer.confirmDragAndDrop": false,
-  "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
-  "editor.tabSize": 2,
-  "window.zoomLevel": 0,
+  "files.trimTrailingWhitespace": true,
   "git.autofetch": true,
   "git.confirmSync": false,
+  "github.copilot.editor.enableAutoCompletions": true,
   "githubPullRequests.pullBranch": "never",
-  "github.copilot.editor.enableAutoCompletions": true
+  "go.useLanguageServer": true,
+  "terminal.integrated.shell.osx": "/bin/zsh",
+  "window.zoomLevel": 0
 }
