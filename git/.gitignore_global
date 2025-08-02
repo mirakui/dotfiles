@@ -5,3 +5,7 @@
 yarn-error.log
 .vscode/settings.json
 tfplan
+.envrc
+settings.local.json
+.cctmp/
+__pycache__/

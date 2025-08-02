@@ -42,6 +42,7 @@ alias vv='vi --clean ~/.vimrc'
 alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
 alias vw='vi ~/.config/wezterm/wezterm.lua'
+alias vcc='vi -p ~/.claude/settings.json ~/.claude/CLAUDE.md'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 #alias st='gf status -sbu'
 alias st='gf status'
@@ -188,8 +189,8 @@ export AWSSH_CSSH=tmux-cssh
 function peco-git-ls-open() {
   local files=`git ls-files | peco --prompt "git ls-files>"`
   if [ -n "$files" ]; then
-    #BUFFER="vi ${files}"
-    #zle accept-line
+    BUFFER="vi ${files}"
+    zle accept-line
     BUFFER="${BUFFER}${files}"
     zle redisplay
   fi
@@ -286,7 +287,18 @@ if [ -f "$GCLOUD_SDK_DIR/path.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/path.zsh.inc";
 if [ -f "$GCLOUD_SDK_DIR/completion.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/completion.zsh.inc"; fi
 
 # mise
-export PATH=$HOME/.local/share/mise/shims:$PATH
+if [ -x ~/.local/bin/mise ]; then
+  eval "$(~/.local/bin/mise activate zsh)"
+  alias mx='mise x --'
+fi
+
+# direnv
+if [ -x ~/.local/share/mise/shims/direnv ]; then
+  eval "$(~/.local/share/mise/shims/direnv hook zsh)"
+fi
+
+# Claude Code
+alias claude="$HOME/.claude/local/claude"
 
 # Enable startup time profiler:
 # zprof
@@ -300,4 +312,4 @@ export PATH="/Users/naruta/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
 # Amazon Q post block. Keep at the bottom of this file.
-[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+#[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
