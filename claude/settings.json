@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(rustc:*)",
+      "Bash(kotlinc:*)",
+      "Bash(conftest:*)",
+      "Bash(yarn format:*)",
+      "Bash(yarn lint:*)",
+      "Bash(yarn test:*)",
+      "Bash(yarn build:*)",
+      "Bash(jq:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(cd:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(readlink:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(bundle:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git log:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(tflint:*)",
+      "Bash(terraform validate:*)",
+      "Bash(terraform fmt:*)",
+      "Bash(terraform plan:*)",
+      "Fetch(https://github.com/*)",
+      "Fetch(https://docs.aws.amazon.com/*)"
+    ],
+    "deny": [
+      "Bash(terraform apply:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rm:*)",
+      "Bash(git push:*)",
+      "Bash(npm:*)",
+      "Bash(yarn npm:*)",
+      "Bash(pip:*)",
+      "Bash(uv pip:*)",
+      "Bash(sudo:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(rm:*)"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "xargs -I {} osascript -e \"display notification \\\"{}\\\" with title \"claude\""
+          }
+        ]
+      }
+    ]
+  },
+  "feedbackSurveyState": {
+    "lastShownTime": 1754129924816
+  }
+}
