@@ -2,6 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
+      "Bash(echo:*)",
       "Bash(rustc:*)",
       "Bash(kotlinc:*)",
       "Bash(conftest:*)",
@@ -13,6 +14,7 @@
       "Bash(mkdir:*)",
       "Bash(cat:*)",
       "Bash(ls:*)",
+      "Bash(tree:*)",
       "Bash(cd:*)",
       "Bash(grep:*)",
       "Bash(sed:*)",
@@ -25,12 +27,39 @@
       "Bash(git add:*)",
       "Bash(git log:*)",
       "Bash(git rev-parse:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh pr create:*)",
       "Bash(tflint:*)",
       "Bash(terraform validate:*)",
       "Bash(terraform fmt:*)",
       "Bash(terraform plan:*)",
+      "Bash(terraform state list:*)",
+      "Bash(terraform state show:*)",
+      "Bash(terraform output:*)",
+      "Bash(trivy config:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run black:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv add:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:fix:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(ls-lint:*)",
+      "Bash(ecspresso diff:*)",
+      "Bash(ecspresso verify:*)",
+      "Bash(wc:*)",
       "Fetch(https://github.com/*)",
-      "Fetch(https://docs.aws.amazon.com/*)"
+      "Fetch(https://docs.aws.amazon.com/*)",
+      "Fetch(https://registry.terraform.io/*)",
+      "Fetch(https://docs.databricks.com/*)",
+      "WebSearch"
     ],
     "deny": [
       "Bash(terraform apply:*)",
@@ -45,7 +74,9 @@
       "Bash(sudo:*)",
       "Bash(curl:*)",
       "Bash(wget:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "NotebookEdit"
     ]
   },
   "hooks": {
@@ -60,6 +91,12 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true,
+    "example-skills@anthropic-agent-skills": true,
+    "ralph-wiggum@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true
   },
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
