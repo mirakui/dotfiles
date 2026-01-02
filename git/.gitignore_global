@@ -9,3 +9,5 @@ tfplan
 settings.local.json
 .cctmp/
 __pycache__/
+.mairu.json
+.worktree/

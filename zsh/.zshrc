@@ -43,6 +43,7 @@ alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
 alias vw='vi ~/.config/wezterm/wezterm.lua'
 alias vcc='vi -p ~/.claude/settings.json ~/.claude/CLAUDE.md'
+alias claude='AWS_PROFILE="" claude'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 #alias st='gf status -sbu'
 alias st='gf status'
@@ -56,6 +57,7 @@ alias tmux-copy-buffer="tmux show-buffer | pbcopy"
 alias cds='cd $HOME/src'
 alias cdsc='cd $HOME/scratch'
 alias cddt='cd $HOME/src/dotfiles'
+function cdr() { cd $(git rev-parse --show-toplevel) }
 alias be='bundle exec'
 alias bc='bundle console'
 alias bo='bundle open'
@@ -255,12 +257,13 @@ export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
 export PATH=$HOME/.rd/bin:$PATH
 
 # Android
-# export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-17.jdk/Contents/Home
-# export ANDROID_SDK_ROOT=~/Library/Android/sdk
-# export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
-# export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
-# export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
-# function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/amazon-corretto-21.jdk/Contents/Home
+export ANDROID_HOME=$HOME/.android
+export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
+export PATH=$PATH:$ANDROID_SDK_ROOT/emulator
+export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+function android_clean_cache() { rm -i -rf ~/.gradle/caches/transforms-2 && ./gradlew clean && ./gradlew --stop && rm -i -rf ~/.gradle/caches/build-cache-* }
 
 # Java
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
@@ -298,7 +301,7 @@ if [ -x ~/.local/share/mise/shims/direnv ]; then
 fi
 
 # Claude Code
-alias claude="$HOME/.claude/local/claude"
+alias claude="$HOME/.local/bin/claude"
 
 # Enable startup time profiler:
 # zprof
@@ -307,9 +310,27 @@ if [ -f $HOME/.zshrc.secret ]; then source $HOME/.zshrc.secret; fi
 if [ -f $HOME/.zshrc.work ]; then source $HOME/.zshrc.work; fi
 
 
+# Amazon Q post block. Keep at the bottom of this file.
+#[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+
+# pnpm
+export PNPM_HOME="/Users/naruta/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/naruta/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
-# Amazon Q post block. Keep at the bottom of this file.
-#[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+# Added by Antigravity
+export PATH="/Users/naruta/.antigravity/antigravity/bin:$PATH"
+
+# bun completions
+[ -s "/Users/naruta/.bun/_bun" ] && source "/Users/naruta/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
