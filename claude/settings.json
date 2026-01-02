@@ -80,13 +80,13 @@
     ]
   },
   "hooks": {
-    "Notification": [
+    "PreToolUse": [
       {
-        "matcher": "",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "xargs -I {} osascript -e \"display notification \\\"{}\\\" with title \"claude\""
+            "command": "~/.claude/scripts/deny-check.sh"
           }
         ]
       }
