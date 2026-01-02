@@ -66,17 +66,6 @@ function cr() { cursor $(git rev-parse --show-toplevel) }
 alias gl='git ls-files'
 alias chrome-canary="/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary"
 
-function git-branch-new() {
-  echo -n "branch suffix: "
-  read suffix
-  branch_name="naruta/$(date '+%Y%m%d')_${suffix}"
-  git checkout -b $branch_name
-}
-function git-push-current-branch-to-origin() {
-  local bname=`git rev-parse --abbrev-ref HEAD`
-  git push origin $bname
-}
-
 autoload zmv
 alias zmv='noglob zmv'
 
@@ -84,7 +73,9 @@ alias zmv='noglob zmv'
 # prompt
 ############################################################
 
-if [ "$TERM_PROGRAM" != "WarpTerminal" ]; then
+if [ "$TERM_PROGRAM" = "WarpTerminal" ]; then
+  function zle() {}
+else
   if [ -x "$HOMEBREW_PREFIX/bin/starship" ]; then
     # https://github.com/starship/starship
     eval "$(starship init zsh)"
@@ -170,6 +161,44 @@ function scratch-new() {
   cd "${target_dir}"
 }
 
+export FZF_DEFAULT_OPTS="--layout reverse --border --height 20% --tac"
+
+function git-branch-new() {
+  echo -n "branch suffix: "
+  read suffix
+  branch_name="naruta/$(date '+%Y%m%d')_${suffix}"
+  git checkout -b $branch_name
+}
+
+function g() {
+  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | fzf)
+  if [ -n "$SELECTED" ]; then
+    vi $SELECTED
+  fi
+}
+
+function G() {
+  SELECTED=$(tree -L1 --noreport -fdi ~/src/ ~/work | sed "s=${HOME}=~=" | fzf)
+  SELECTED=$(echo $SELECTED | sed "s=^~=${HOME}=")
+  if [ -n "$SELECTED" ]; then
+    cd $SELECTED
+  fi
+}
+
+function d() {
+  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf)
+  if [ -n "$SELECTED" ]; then
+    cd $SELECTED
+  fi
+}
+
+function b() {
+  SELECTED=$(git branch --format='%(refname:short)' | sort | fzf --tiebreak=index)
+  if [ -n "$SELECTED" ]; then
+    git switch $SELECTED
+  fi
+}
+
 ############################################################
 # external environments
 ############################################################
@@ -187,28 +216,6 @@ fi
 export AWSSH_PERCOL=$HOMEBREW_PREFIX/bin/peco
 export AWSSH_CSSH=tmux-cssh
 
-# peco
-function peco-git-ls-open() {
-  local files=`git ls-files | peco --prompt "git ls-files>"`
-  if [ -n "$files" ]; then
-    BUFFER="vi ${files}"
-    zle accept-line
-    BUFFER="${BUFFER}${files}"
-    zle redisplay
-  fi
-}
-zle -N peco-git-ls-open
-bindkey '^G' peco-git-ls-open
-
-function peco-git-change-branch() {
-  local branch=`git branch | peco --prompt "git branch>" | tr -d ' *'`
-  if [ -n "$branch" ]; then
-    BUFFER="${BUFFER}${branch}"
-    zle redisplay
-  fi
-}
-zle -N peco-git-change-branch
-bindkey '^G^B' peco-git-change-branch
 
 # golang
 export GOPATH=$HOME/gocode
@@ -238,17 +245,6 @@ if [ -d /Applications/Visual\ Studio\ Code.app ]; then
   export PATH=/Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin:$PATH
 fi
 
-# ghq
-function peco-src () {
-  local selected_dir=$(ghq list -p | peco --query "$LBUFFER")
-  if [ -n "$selected_dir" ]; then
-    BUFFER="cd ${selected_dir}"
-    zle accept-line
-  fi
-  zle clear-screen
-}
-zle -N peco-src
-bindkey '^]' peco-src
 
 # tmux-cssh
 export PATH=$HOME/src/github.com/zinic/tmux-cssh:$PATH
