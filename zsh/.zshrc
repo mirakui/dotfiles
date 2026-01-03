@@ -3,17 +3,35 @@
 # Enable startup time profiler:
 # zmodload zsh/zprof
 
+############################################################
+# Performance optimization: Lazy loading helper
+############################################################
+# Helper function to create lazy-loading wrappers
+# Usage: _lazy_load_cmd <command> <init_function>
+function _lazy_load_cmd() {
+  local cmd=$1
+  local init_func=$2
+  eval "function $cmd() {
+    unfunction $cmd
+    $init_func
+    $cmd \"\$@\"
+  }"
+}
+
+############################################################
+# Basic environment
+############################################################
 VIM_PREFIX=/usr
 
-if [ -d /opt/brew ]; then
+if [[ -d /opt/brew ]]; then
   HOMEBREW_PREFIX=/opt/brew
-elif [ -d /opt/homebrew ]; then
+elif [[ -d /opt/homebrew ]]; then
   HOMEBREW_PREFIX=/opt/homebrew
 else
   HOMEBREW_PREFIX=/usr/local
 fi
 
-if [ -x ${HOMEBREW_PREFIX}/bin/nvim ]; then
+if [[ -x ${HOMEBREW_PREFIX}/bin/nvim ]]; then
   VIM_PATH=${HOMEBREW_PREFIX}/bin/nvim
 else
   VIM_PATH=/usr/bin/vim
@@ -73,12 +91,20 @@ alias zmv='noglob zmv'
 # prompt
 ############################################################
 
-if [ "$TERM_PROGRAM" = "WarpTerminal" ]; then
+if [[ "$TERM_PROGRAM" = "WarpTerminal" ]]; then
   function zle() {}
 else
-  if [ -x "$HOMEBREW_PREFIX/bin/starship" ]; then
+  if [[ -x "$HOMEBREW_PREFIX/bin/starship" ]]; then
     # https://github.com/starship/starship
-    eval "$(starship init zsh)"
+    # Cache starship init for faster startup
+    _starship_cache="${XDG_CACHE_HOME:-$HOME/.cache}/starship_init.zsh"
+    _starship_bin="$HOMEBREW_PREFIX/bin/starship"
+    if [[ ! -f "$_starship_cache" ]] || [[ "$_starship_bin" -nt "$_starship_cache" ]]; then
+      mkdir -p "${_starship_cache:h}"
+      starship init zsh > "$_starship_cache"
+    fi
+    source "$_starship_cache"
+    unset _starship_cache _starship_bin
   else
     autoload promptinit
     promptinit
@@ -116,11 +142,18 @@ bindkey "^S" history-incremental-pattern-search-forward
 #bindkey -s ':q' "^A^Kexit\n"
 
 ############################################################
-# auto complete
+# auto complete (with caching for faster startup)
 ############################################################
 
-autoload -U compinit
-compinit
+autoload -Uz compinit
+# Only regenerate .zcompdump once per day
+_zcompdump="${ZDOTDIR:-$HOME}/.zcompdump"
+if [[ -n ${_zcompdump}(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
+unset _zcompdump
 
 autoload predict-on
 #predict-on
@@ -206,10 +239,19 @@ function b() {
 # gpg
 export GPG_TTY=$TTY
 
-# rbenv
+# rbenv (lazy loading for faster startup)
 export PATH=$HOME/.rbenv/bin:$PATH
-if [ -x $HOME/.rbenv/bin/rbenv ]; then
-eval "$(rbenv init - zsh)"
+if [[ -x $HOME/.rbenv/bin/rbenv ]]; then
+  export PATH="$HOME/.rbenv/shims:$PATH"
+  function _init_rbenv() {
+    eval "$(rbenv init - zsh --no-rehash)"
+  }
+  _lazy_load_cmd ruby _init_rbenv
+  _lazy_load_cmd gem _init_rbenv
+  _lazy_load_cmd bundle _init_rbenv
+  _lazy_load_cmd rails _init_rbenv
+  _lazy_load_cmd irb _init_rbenv
+  _lazy_load_cmd rake _init_rbenv
 fi
 
 # awssh
@@ -226,12 +268,17 @@ export PATH=$GOPATH/bin:$PATH
 # https://cloud.google.com/sdk/#Quick_Start# The next line enables shell command completion for gcloud.
 # source "$HOME/google-cloud-sdk/completion.zsh.inc"
 
-# pyenv
-if `which pyenv > /dev/null`; then
+# pyenv (lazy loading for faster startup)
+if [[ -d $HOME/.pyenv ]]; then
   export PYENV_ROOT=$HOME/.pyenv
-  export PATH=$PYENV_ROOT/bin:$PATH
-  eval "$(pyenv init -)"
-  #eval "$(pyenv virtualenv-init -)"
+  export PATH=$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH
+  function _init_pyenv() {
+    eval "$(pyenv init - --no-rehash)"
+  }
+  _lazy_load_cmd python _init_pyenv
+  _lazy_load_cmd python3 _init_pyenv
+  _lazy_load_cmd pip _init_pyenv
+  _lazy_load_cmd pip3 _init_pyenv
 fi
 
 # node
@@ -280,20 +327,50 @@ if [ -d $HOMEBREW_PREFIX/opt/mysql-client@8.4/bin ]; then
   export PATH="$HOMEBREW_PREFIX/opt/mysql-client@8.4/bin:$PATH"
 fi
 
-# gcloud
+# gcloud (defer completion loading)
 export GCLOUD_SDK_DIR="/opt/google-cloud-sdk"
-if [ -f "$GCLOUD_SDK_DIR/path.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/path.zsh.inc"; fi
-if [ -f "$GCLOUD_SDK_DIR/completion.zsh.inc" ]; then . "$GCLOUD_SDK_DIR/completion.zsh.inc"; fi
+if [[ -f "$GCLOUD_SDK_DIR/path.zsh.inc" ]]; then
+  . "$GCLOUD_SDK_DIR/path.zsh.inc"
+fi
+# Defer gcloud completion loading
+if [[ -f "$GCLOUD_SDK_DIR/completion.zsh.inc" ]]; then
+  function _init_gcloud_completion() {
+    unfunction gcloud 2>/dev/null
+    . "$GCLOUD_SDK_DIR/completion.zsh.inc"
+  }
+  _lazy_load_cmd gcloud _init_gcloud_completion
+fi
 
-# mise
-if [ -x ~/.local/bin/mise ]; then
-  eval "$(~/.local/bin/mise activate zsh)"
+# mise (lazy loading for faster startup)
+if [[ -x ~/.local/bin/mise ]]; then
+  export PATH="$HOME/.local/share/mise/shims:$PATH"
+  function _init_mise() {
+    eval "$(~/.local/bin/mise activate zsh)"
+  }
+  _lazy_load_cmd mise _init_mise
   alias mx='mise x --'
 fi
 
-# direnv
-if [ -x ~/.local/share/mise/shims/direnv ]; then
-  eval "$(~/.local/share/mise/shims/direnv hook zsh)"
+# direnv (lazy loading for faster startup)
+if [[ -x ~/.local/share/mise/shims/direnv ]]; then
+  function _init_direnv() {
+    eval "$(~/.local/share/mise/shims/direnv hook zsh)"
+  }
+  # direnv needs to hook into cd, so we lazy-load on first cd
+  function _direnv_hook_cd() {
+    unfunction _direnv_hook_cd
+    _init_direnv
+    # Re-trigger direnv for current directory
+    _direnv_hook 2>/dev/null || true
+  }
+  # Defer direnv initialization
+  function chpwd() {
+    if (( $+functions[_direnv_hook] )); then
+      _direnv_hook
+    else
+      _direnv_hook_cd
+    fi
+  }
 fi
 
 # Claude Code
@@ -324,9 +401,13 @@ export PATH="/Users/naruta/.rd/bin:$PATH"
 # Added by Antigravity
 export PATH="/Users/naruta/.antigravity/antigravity/bin:$PATH"
 
-# bun completions
-[ -s "/Users/naruta/.bun/_bun" ] && source "/Users/naruta/.bun/_bun"
-
-# bun
+# bun (defer completion loading)
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+if [[ -s "$HOME/.bun/_bun" ]]; then
+  function _init_bun_completion() {
+    unfunction bun 2>/dev/null
+    source "$HOME/.bun/_bun"
+  }
+  _lazy_load_cmd bun _init_bun_completion
+fi
