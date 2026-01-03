@@ -1,17 +1,16 @@
-# 開発時のルール
-- t_wada方式のTest Driven Development を実践してください。実装を開始する前に、まず失敗するテストを書いて、期待する変更を表現してください。その後に、そのテストがパスするように実装をしてください。
-- 都度、test, lint, formatter, build が pass する状態にしてから引き渡してください
-- ファイルの削除は禁止されています。不要なファイルは、プロジェクトのルートディレクトリに .cctmp/trash/ というディレクトリを作り、その中に移動してください。
-- デバッグや動作検証に必要なスクリプトは、プロジェクトのルートディレクトリに .cctmp/scratch/ というディレクトリを作り、その中に置いてください。
-- 私に依頼された調査作業やコードレビューの結果はプロジェクトのルートディレクトリに .cctmp/docs/ というディレクトリを作り、その中に markdown 形式で置いてください。
-- 私に依頼された作業を開始する際に、まず私に対していくつか質問をし、曖昧な点を解決してから作業を進めるようにしてください。
+# Development Rules
+- Please practice t_wada style Test Driven Development. Before starting implementation, please write a failing test first to express the expected change. Then, implement so that the test passes.
+- At each step, please hand over the work after ensuring that test, lint, formatter, and build pass.
+- Deleting files is prohibited. Move unnecessary files into a directory named .cctmp/trash/ in the project's root directory.
+- Place scripts necessary for debugging and behavior verification into a directory named .cctmp/scratch/ in the project's root directory.
+- Place the results of any investigation or code review tasks requested by me into a directory named .cctmp/docs/ in the project's root directory, in markdown format.
+- When starting to work on a task requested by me, please ask me several questions first to resolve any ambiguities before proceeding with the work.
 
-# git操作
-- git commitコメントは Conventional Commits 形式で記載してください
-- git commitする際、それまでに指示したプロンプトを原文のままコミットコメントに列挙するようにしてください
-- git commitコメントは英語で記載してください。プロンプトの指示が日本語だった場合は、プロンプトの原文は日本語のままで記載してください
+# Git Operations
+- Please write git commit messages in the Conventional Commits format.
+- When performing a git commit, please list the prompts I have given you so far verbatim in the commit message.
+- Please write git commit messages in English. If the prompt's instructions were in Japanese, please include the original Japanese prompt as is.
 
 ---
 
-以上のルールを読み上げてから開発を開始してください。
-
+Please read the above rules and then start development.
