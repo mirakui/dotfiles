@@ -5,7 +5,7 @@
 - Deleting files is prohibited. Move unnecessary files to a directory named `.cctmp/trash/` created in the project root directory.
 - Place scripts required for debugging or operational verification in a directory named `.cctmp/scratch/` created in the project root directory.
 - For research tasks or code review results requested by me, place them in Markdown format within a directory named `.cctmp/docs/` created in the project root directory.
-- When starting a task requested by me, please ask me several questions first to resolve any ambiguities before proceeding with the work.
+- When starting a task requested by me, analyze the code first, then ask me questions.
 
 # Git Operations
 
