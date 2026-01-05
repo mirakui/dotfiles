@@ -18,6 +18,24 @@ function _lazy_load_cmd() {
   }"
 }
 
+# Helper to bind keys to user-defined zle widgets safely (interactive-only).
+# Usage: _bindkey_widget <key> <function_name>
+function _bindkey_widget() {
+  local key=$1
+  local widget=$2
+
+  [[ -o interactive ]] || return 0
+
+  # In some environments (e.g. WarpTerminal), `zle` may be stubbed as a shell function.
+  # Only proceed when `zle` is available as a builtin.
+  local zle_info
+  zle_info=$(whence -w zle 2>/dev/null || true)
+  [[ "$zle_info" == *builtin* ]] || return 0
+
+  zle -N "$widget"
+  bindkey "$key" "$widget"
+}
+
 ############################################################
 # Basic environment
 ############################################################
@@ -204,34 +222,42 @@ function git-branch-new() {
   git checkout -b $branch_name
 }
 
-function g() {
+function fzf-git-files() {
   SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | fzf)
   if [ -n "$SELECTED" ]; then
     vi $SELECTED
   fi
+  zle redisplay
 }
+_bindkey_widget "^g" fzf-git-files
 
-function G() {
+function fzf-git-dirs() {
+  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf)
+  if [ -n "$SELECTED" ]; then
+    cd $SELECTED
+  fi
+  zle redisplay
+}
+_bindkey_widget "^[d" fzf-git-dirs
+
+function fzf-git-repos() {
   SELECTED=$(tree -L1 --noreport -fdi ~/src/ ~/work | sed "s=${HOME}=~=" | fzf)
   SELECTED=$(echo $SELECTED | sed "s=^~=${HOME}=")
   if [ -n "$SELECTED" ]; then
     cd $SELECTED
   fi
+  zle redisplay
 }
+_bindkey_widget "^[r" fzf-git-repos
 
-function d() {
-  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf)
-  if [ -n "$SELECTED" ]; then
-    cd $SELECTED
-  fi
-}
-
-function b() {
+function fzf-git-branches() {
   SELECTED=$(git branch --format='%(refname:short)' | sort | fzf --tiebreak=index)
   if [ -n "$SELECTED" ]; then
     git switch $SELECTED
   fi
+  zle redisplay
 }
+_bindkey_widget "^[b" fzf-git-branches
 
 ############################################################
 # external environments
