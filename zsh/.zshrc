@@ -41,6 +41,7 @@ export LANG=ja_JP.UTF-8
 export EDITOR=$VIM_PATH
 export PATH=$HOMEBREW_PREFIX/bin:$PATH
 export PATH=/usr/local/bin:/opt/local/bin:$PATH
+export PATH=$HOME/.local/bin:$PATH
 export PATH=$HOME/src/dotfiles/bin:$PATH
 export LESS='-R'
 

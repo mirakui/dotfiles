@@ -61,13 +61,6 @@
       "Fetch(https://docs.databricks.com/*)",
       "WebSearch"
     ],
-    "ask": [
-      "Bash(git push:*)",
-      "Bash(git reset:*)",
-      "Bash(git checkout:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)"
-    ],
     "deny": [
       "Bash(terraform apply:*)",
       "Bash(git rm:*)",
@@ -79,6 +72,13 @@
       "Bash(rm:*)",
       "Bash(rmdir:*)",
       "NotebookEdit"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
     ]
   },
   "hooks": {

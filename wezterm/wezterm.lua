@@ -35,7 +35,7 @@ return {
   initial_cols = 180,
   color_scheme = "Operator Mono Dark", -- https://wezfurlong.org/wezterm/colorschemes/index.html
 
-  window_background_opacity = 0.8,
+  window_background_opacity = 0.95,
   hide_tab_bar_if_only_one_tab = true,
   adjust_window_size_when_changing_font_size = false,
 
