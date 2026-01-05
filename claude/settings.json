@@ -63,13 +63,11 @@
     ],
     "deny": [
       "Bash(terraform apply:*)",
-      "Bash(git rm:*)",
       "Bash(npm:*)",
       "Bash(yarn npm:*)",
       "Bash(pip:*)",
       "Bash(uv pip:*)",
       "Bash(sudo:*)",
-      "Bash(rm:*)",
       "Bash(rmdir:*)",
       "NotebookEdit"
     ],
@@ -77,7 +75,9 @@
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
+      "Bash(git rm:*)",
       "Bash(curl:*)",
+      "Bash(rm:*)",
       "Bash(wget:*)"
     ]
   },
