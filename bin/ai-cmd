@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEFAULT_MODEL="claude-haiku-4-5"
+
+usage() {
+  cat >&2 <<EOF
+Usage:
+  $0 [--mode shell|postgres] "<natural language>"
+
+Modes:
+  shell     Translate into ONE safe POSIX shell command (default)
+  postgres  Translate into ONE safe PostgreSQL query
+EOF
+}
+
+MODE="shell"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --mode)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Error: --mode requires an argument" >&2
+        usage
+        exit 2
+      fi
+      MODE="$1"
+      shift
+      ;;
+    --mode=*)
+      MODE="${1#--mode=}"
+      shift
+      ;;
+    -m)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Error: -m requires an argument" >&2
+        usage
+        exit 2
+      fi
+      MODE="$1"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Error: unknown option: $1" >&2
+      usage
+      exit 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  usage
+  exit 2
+fi
+
+NL="$*"
+
+SYSTEM_PROMPT=""
+JSON_SCHEMA=""
+JQ_FILTER=""
+case "$MODE" in
+  shell)
+    # 1行コマンドだけ返させるための “強い” システムプロンプト
+    SYSTEM_PROMPT=$'You translate a user request into ONE safe POSIX shell command.\n\
+Rules:\n\
+- Output MUST be valid JSON that matches the provided schema.\n\
+- cmd must be a single-line shell command (no newlines, no markdown).\n\
+- Prefer common tools available on macOS/Linux (find, rg, sed, awk, jq, tar, curl).\n\
+- Do NOT include destructive commands (rm, mv, dd, mkfs, shutdown, reboot, :(){:|:&};:, fork bombs) unless user explicitly asks AND they included the word \"DESTRUCTIVE_OK\".\n\
+- If the request is ambiguous, choose the safest reasonable interpretation.\n'
+    JSON_SCHEMA='{"type":"object","properties":{"cmd":{"type":"string"}}, "required":["cmd"]}'
+    JQ_FILTER='.structured_output.cmd'
+    ;;
+  postgres)
+    SYSTEM_PROMPT=$'You translate a user request into ONE safe PostgreSQL query.\n\
+Rules:\n\
+- Output MUST be valid JSON that matches the provided schema.\n\
+- query must be a single SQL statement (no multiple statements, no markdown).\n\
+- Prefer SELECT-only solutions.\n\
+- Do NOT include destructive statements (DROP, TRUNCATE, ALTER, DELETE, UPDATE, INSERT) unless user explicitly asks AND they included the word \"DESTRUCTIVE_OK\".\n\
+- If the request is ambiguous, choose the safest reasonable interpretation.\n'
+    JSON_SCHEMA='{"type":"object","properties":{"query":{"type":"string"}}, "required":["query"]}'
+    JQ_FILTER='.structured_output.query'
+    ;;
+  *)
+    echo "Error: invalid mode: $MODE (expected: shell|postgres)" >&2
+    usage
+    exit 2
+    ;;
+esac
+
+# JSON schema で構造化してもらう（print mode / output-format json）
+claude -p \
+  --output-format json \
+  --system-prompt "$SYSTEM_PROMPT" \
+  --model "$DEFAULT_MODEL" \
+  --json-schema "$JSON_SCHEMA" \
+  "Request: ${NL}" \
+| jq -r "$JQ_FILTER"
