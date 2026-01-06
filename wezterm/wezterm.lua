@@ -65,6 +65,11 @@ return {
       mods = 'ALT|CMD',
       action = wezterm.action.ShowDebugOverlay
     },
+    {
+      key = 'Enter',
+      mods = 'SHIFT',
+      action = wezterm.action.SendString("\x1b\r")
+    },
     -- TODO: cmd+u で Opacity をいじりたい
   },
 }
