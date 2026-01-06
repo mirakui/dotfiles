@@ -147,18 +147,6 @@ setopt auto_list
 setopt auto_pushd
 
 bindkey -e
-autoload history-search-end
-zle -N history-beginning-search-backward-end history-search-end
-zle -N history-beginning-search-forward-end history-search-end
-bindkey "^P" history-beginning-search-backward-end
-bindkey "^N" history-beginning-search-forward-end
-# for zsh-4.3.10 or later
-# http://subtech.g.hatena.ne.jp/secondlife/20110222/1298354852
-bindkey "^R" history-incremental-pattern-search-backward
-bindkey "^S" history-incremental-pattern-search-forward
-
-# http://twitter.com/#!/bulkneets/status/159186827809529857
-#bindkey -s ':q' "^A^Kexit\n"
 
 ############################################################
 # auto complete (with caching for faster startup)
@@ -258,6 +246,13 @@ function fzf-git-branches() {
   zle redisplay
 }
 _bindkey_widget "^[b" fzf-git-branches
+
+function fzf-history() {
+  BUFFER=$(history -n 1 | fzf --no-sort --query="$LBUFFER")
+  CURSOR=$#BUFFER
+  zle redisplay
+}
+_bindkey_widget "^r" fzf-history
 
 ############################################################
 # external environments
