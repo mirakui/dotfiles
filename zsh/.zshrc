@@ -390,15 +390,21 @@ if [[ -x ~/.local/share/mise/shims/direnv ]]; then
     # Re-trigger direnv for current directory
     _direnv_hook 2>/dev/null || true
   }
-  # Defer direnv initialization
-  function chpwd() {
-    if (( $+functions[_direnv_hook] )); then
-      _direnv_hook
-    else
-      _direnv_hook_cd
-    fi
-  }
 fi
+
+# chpwd hook: notify terminal of directory change (OSC 7) and trigger direnv
+function chpwd() {
+  # OSC 7: Tell terminal emulator (wezterm) the current working directory
+  # This enables wezterm to show the directory name in the tab title
+  printf '\e]7;file://%s%s\e\\' "${HOST}" "${PWD}"
+
+  # direnv hook
+  if (( $+functions[_direnv_hook] )); then
+    _direnv_hook
+  elif (( $+functions[_direnv_hook_cd] )); then
+    _direnv_hook_cd
+  fi
+}
 
 # Claude Code
 alias claude="$HOME/.local/bin/claude"

@@ -17,7 +17,13 @@ end
 wezterm.on(
   'format-tab-title',
   function(tab, tabs, panes, config, hover, max_width)
-    title = shorten_path(tab.active_pane.current_working_dir)
+    local cwd = tab.active_pane.current_working_dir
+    local path = ""
+    if cwd then
+      -- current_working_dir is a URL object; extract file_path
+      path = cwd.file_path or tostring(cwd)
+    end
+    local title = shorten_path(path)
     return {
       -- { Background = { Color = 'blue' } },
       { Text = ' ' .. title .. ' ' },
