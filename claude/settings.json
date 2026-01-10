@@ -59,7 +59,9 @@
       "Fetch(https://docs.aws.amazon.com/*)",
       "Fetch(https://registry.terraform.io/*)",
       "Fetch(https://docs.databricks.com/*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:strandsagents.com)",
+      "WebFetch(domain:aws.amazon.com)"
     ],
     "deny": [
       "Bash(terraform apply:*)",
@@ -79,7 +81,8 @@
       "Bash(curl:*)",
       "Bash(rm:*)",
       "Bash(wget:*)"
-    ]
+    ],
+    "defaultMode": "default"
   },
   "hooks": {
     "PreToolUse": [
@@ -93,12 +96,6 @@
         ]
       }
     ]
-  },
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true,
-    "example-skills@anthropic-agent-skills": true,
-    "ralph-wiggum@claude-plugins-official": true,
-    "code-review@claude-plugins-official": true
   },
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816

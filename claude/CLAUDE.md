@@ -2,10 +2,8 @@
 
 - Practice Test Driven Development in the t_wada style. Before starting the implementation, first write a failing test that expresses the expected change. Afterward, implement the code to make that test pass.
 - Ensure that the tests, lint, formatter, and build pass before handing over the work.
-- Deleting files is prohibited. Move unnecessary files to a directory named `.cctmp/trash/` created in the project root directory.
 - Place scripts required for debugging or operational verification in a directory named `.cctmp/scratch/` created in the project root directory.
-- For research tasks or code review results requested by me, place them in Markdown format within a directory named `.cctmp/docs/` created in the project root directory.
-- When starting a task requested by me, analyze the code first, then ask me questions.
+- When starting the task I requested, please begin by analyzing the code, and if there are any points of clarification, use the AskUserQuestion tool to ask me.
 
 # Git Operations
 
