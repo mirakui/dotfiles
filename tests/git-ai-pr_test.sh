@@ -14,13 +14,43 @@ mkdir -p "$stub_bin"
 log_file="${tmp}/calls.log"
 touch "$log_file"
 
+body_file="${tmp}/gh_body.txt"
+title_file="${tmp}/gh_title.txt"
+stderr_file="${tmp}/stderr.txt"
+touch "$body_file" "$title_file" "$stderr_file"
+
+fake_repo="${tmp}/repo"
+mkdir -p "$fake_repo"
+
+reset_case_files() {
+  : >"$log_file"
+  : >"$body_file"
+  : >"$title_file"
+  : >"$stderr_file"
+}
+
+run_git_ai_pr() {
+  reset_case_files
+  set +e
+  PATH="${stub_bin}:$PATH" bash -c '
+    if [[ ! -f "'"$SCRIPT"'" ]]; then
+      echo "Expected file not found: '"$SCRIPT"'" >&2
+      exit 1
+    fi
+    bash "'"$SCRIPT"'" "$@" 2>"'"$stderr_file"'"
+  ' bash "$@"
+  rc=$?
+  set -e
+  return "$rc"
+}
+
 cat > "${stub_bin}/git" <<EOF
 #!/usr/bin/env bash
 set -e
 echo "git \$*" >> "${log_file}"
 
 if [[ "\$1" == "rev-parse" && "\$2" == "--show-toplevel" ]]; then
-  echo "/fake/repo"
+  echo "${fake_repo}"
   exit 0
 fi
 
@@ -67,6 +97,20 @@ if [[ "\$1 \$2" == "repo view" ]]; then
 fi
 
 if [[ "\$1 \$2" == "pr create" ]]; then
+  # Capture --title / --body for assertions (body may contain newlines)
+  args=( "\$@" )
+  i=0
+  while [[ \$i -lt \${#args[@]} ]]; do
+    a="\${args[\$i]}"
+    if [[ "\$a" == "--title" ]]; then
+      i=\$((i + 1))
+      printf '%s' "\${args[\$i]:-}" > "${title_file}"
+    elif [[ "\$a" == "--body" ]]; then
+      i=\$((i + 1))
+      printf '%s' "\${args[\$i]:-}" > "${body_file}"
+    fi
+    i=\$((i + 1))
+  done
   exit 0
 fi
 
@@ -96,20 +140,50 @@ JSON
 EOF
 chmod +x "${stub_bin}/cursor-agent"
 
-PATH="${stub_bin}:$PATH" bash -c '
-  if [[ ! -f "'"$SCRIPT"'" ]]; then
-    echo "Expected file not found: '"$SCRIPT"'" >&2
-    exit 1
-  fi
-  bash "'"$SCRIPT"'" --base main --draft
-'
-
-# Assertions: gh pr create called with title/body/base/draft
+# Case 1: no template -> body is AI body as-is; also opens browser by default
+run_git_ai_pr --base main --draft
 grep -q "gh pr create" "$log_file"
 grep -q -- "--base main" "$log_file"
 grep -q -- "--draft" "$log_file"
-grep -q -- "--title feat: add git-ai-pr" "$log_file"
-grep -q -- "--body This PR adds git-ai-pr." "$log_file"
+grep -q -- "gh pr view --web" "$log_file"
+grep -q -- "feat: add git-ai-pr" "$title_file"
+grep -q -- "This PR adds git-ai-pr." "$body_file"
 
-# Assertions: open browser after creating PR
-grep -q "gh pr view --web" "$log_file"
+# Case 2: single template -> inject AI body after first matching heading
+mkdir -p "${fake_repo}/.github"
+cat > "${fake_repo}/.github/pull_request_template.md" <<'TPL'
+## Summary
+
+- Checklist item
+TPL
+
+run_git_ai_pr --base main --draft --no-open
+grep -q -- "## Summary" "$body_file"
+grep -q -- "This PR adds git-ai-pr." "$body_file"
+awk '
+  /This PR adds git-ai-pr\./ { ai=NR }
+  /- Checklist item/ { chk=NR }
+  END { if (!(ai>0 && chk>0 && ai < chk)) exit 1 }
+' "$body_file"
+
+# Case 3: multiple templates -> require --template
+rm -f "${fake_repo}/.github/pull_request_template.md"
+mkdir -p "${fake_repo}/.github/PULL_REQUEST_TEMPLATE"
+cat > "${fake_repo}/.github/PULL_REQUEST_TEMPLATE/a.md" <<'TPL'
+## Summary
+from a
+TPL
+cat > "${fake_repo}/.github/PULL_REQUEST_TEMPLATE/b.md" <<'TPL'
+## Summary
+from b
+TPL
+
+if run_git_ai_pr --base main --draft --no-open; then
+  echo "Expected failure due to multiple templates, but command succeeded" >&2
+  exit 1
+fi
+grep -q -- "--template" "$stderr_file"
+
+# Case 4: multiple templates + --template a -> choose a.md
+run_git_ai_pr --base main --draft --no-open --template a
+grep -q -- "from a" "$body_file"
