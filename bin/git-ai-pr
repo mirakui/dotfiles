@@ -4,7 +4,7 @@ set -euo pipefail
 # git ai-pr: Generate GitHub Pull Request title/body using AI, then create PR via gh.
 #
 # Usage:
-#   git ai-pr [--base <branch>] [--draft] [--cursor] [--model <claude-model>] [--no-open] [--] [extra gh pr create args...]
+#   git ai-pr [--base <branch>] [--draft] [--cursor] [--model <claude-model>] [--no-open] [--template <name>] [--] [extra gh pr create args...]
 #
 # Notes:
 # - Requires: git, gh, jq, and either `claude` or `cursor-agent`.
@@ -20,11 +20,13 @@ Options:
   --cursor           Use cursor-agent instead of claude
   --model <model>    Claude model name (default: claude-haiku-4-5)
   --no-open          Do not open the created PR in the browser
+  --template <name>  Use PR template from .github/PULL_REQUEST_TEMPLATE/<name>(.md)
   -h, --help         Show this help
 
 Examples:
   git ai-pr
   git ai-pr --base main --draft
+  git ai-pr --template bugfix
   git ai-pr --cursor -- --label "chore" --reviewer "someone"
 EOF
 }
@@ -36,6 +38,7 @@ draft=false
 use_cursor=false
 open_browser=true
 model="${GIT_AI_PR_MODEL:-$DEFAULT_MODEL}"
+template_name=""
 gh_args=()
 
 while [[ $# -gt 0 ]]; do
@@ -56,6 +59,16 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-open)
       open_browser=false
+      shift
+      ;;
+    --template)
+      shift
+      [[ $# -ge 1 ]] || { echo "Error: --template requires an argument" >&2; usage; exit 2; }
+      template_name="$1"
+      shift
+      ;;
+    --template=*)
+      template_name="${1#--template=}"
       shift
       ;;
     --cursor)
@@ -110,12 +123,88 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
   echo "Error: not inside a git repository" >&2
   exit 1
 fi
+repo_root="$(git rev-parse --show-toplevel)"
 
 head_branch="$(git rev-parse --abbrev-ref HEAD)"
 if [[ "$head_branch" == "HEAD" ]]; then
   echo "Error: detached HEAD is not supported" >&2
   exit 1
 fi
+
+select_pr_template() {
+  local selected=""
+
+  if [[ -n "$template_name" ]]; then
+    if [[ "$template_name" == *"/"* ]]; then
+      echo "Error: --template must be a file name (no '/'): ${template_name}" >&2
+      exit 2
+    fi
+    local name="$template_name"
+    [[ "$name" == *.md ]] || name="${name}.md"
+    local f="${repo_root}/.github/PULL_REQUEST_TEMPLATE/${name}"
+    if [[ ! -f "$f" ]]; then
+      echo "Error: PR template not found: ${f}" >&2
+      exit 2
+    fi
+    printf '%s' "$f"
+    return 0
+  fi
+
+  local candidates=()
+  local f=""
+
+  f="${repo_root}/.github/pull_request_template.md"
+  [[ -f "$f" ]] && candidates+=("$f")
+  f="${repo_root}/pull_request_template.md"
+  [[ -f "$f" ]] && candidates+=("$f")
+  f="${repo_root}/docs/pull_request_template.md"
+  [[ -f "$f" ]] && candidates+=("$f")
+
+  shopt -s nullglob
+  for f in "${repo_root}/.github/PULL_REQUEST_TEMPLATE/"*.md; do
+    [[ -f "$f" ]] && candidates+=("$f")
+  done
+  shopt -u nullglob
+
+  if [[ ${#candidates[@]} -eq 0 ]]; then
+    printf '%s' ""
+    return 0
+  fi
+  if [[ ${#candidates[@]} -eq 1 ]]; then
+    printf '%s' "${candidates[0]}"
+    return 0
+  fi
+
+  echo "Error: multiple pull request templates found. Please specify one with --template <name>." >&2
+  echo "Found:" >&2
+  for f in "${candidates[@]}"; do
+    if [[ "$f" == "${repo_root}/"* ]]; then
+      echo "  - ${f#${repo_root}/}" >&2
+    else
+      echo "  - ${f}" >&2
+    fi
+  done
+  exit 2
+}
+
+merge_body_with_template() {
+  local template_text="$1"
+  local ai_body="$2"
+  local heading_re='^[[:space:]]*##[[:space:]]*(Summary|概要|Description|説明|Changes|変更|Notes|備考|Background|Motivation|Why|How)([[:space:]]|$)'
+  local line_no=""
+
+  line_no="$(printf '%s\n' "$template_text" | grep -nE "$heading_re" | head -n 1 | cut -d: -f1 || true)"
+  if [[ -n "$line_no" ]]; then
+    local before=""
+    local after=""
+    before="$(printf '%s\n' "$template_text" | sed -n "1,${line_no}p")"
+    after="$(printf '%s\n' "$template_text" | sed -n "$((line_no + 1)),\$p")"
+    printf '%s\n\n%s\n\n%s' "$before" "$ai_body" "$after"
+    return 0
+  fi
+
+  printf '%s\n\n---\n\n## AI Summary\n\n%s\n' "$template_text" "$ai_body"
+}
 
 if [[ -z "$base_branch" ]]; then
   # Prefer gh repo default branch
@@ -132,6 +221,8 @@ base_ref="$base_branch"
 if git rev-parse --verify "origin/${base_branch}" >/dev/null 2>&1; then
   base_ref="origin/${base_branch}"
 fi
+
+template_path="$(select_pr_template)"
 
 diff="$(git diff --no-color "${base_ref}...HEAD")"
 if [[ -z "$diff" ]]; then
@@ -232,6 +323,11 @@ body="$(coerce_body "$body")"
 if [[ -z "$title" || -z "$body" || "$title" == "null" || "$body" == "null" ]]; then
   echo "Failed to generate PR title/body." >&2
   exit 1
+fi
+
+if [[ -n "$template_path" ]]; then
+  template_text="$(cat "$template_path" | tr -d '\r')"
+  body="$(merge_body_with_template "$template_text" "$body")"
 fi
 
 cmd=(gh pr create --base "$base_branch" --title "$title" --body "$body")
