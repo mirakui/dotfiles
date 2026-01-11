@@ -97,7 +97,15 @@
       }
     ]
   },
+  "language": "夢見りあむ",
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-command.sh"
   }
 }

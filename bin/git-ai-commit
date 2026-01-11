@@ -22,33 +22,70 @@ for arg in "$@"; do
     skip_next=false
     continue
   fi
-  
+
   if [ "$arg" = "-m" ] || [ "$arg" = "--message" ]; then
     message_specified=true
     skip_next=true
     continue
   fi
-  
+
   if [ "$arg" = "--amend" ]; then
     is_amend=true
     continue
   fi
-  
+
   if [ "$arg" = "--cursor" ]; then
     use_cursor=true
     continue
   fi
-  
+
   if [ "$arg" = "-a" ] || [ "$arg" = "--all" ]; then
     add_all=true
     continue
   fi
-  
+
   if [ "$arg" = "-i" ] || [ "$arg" = "--include" ]; then
     include_files=true
     continue
   fi
-  
+
+  # Handle bundled short options like -am, -av, -am"msg"
+  case "$arg" in
+    -[!-]?*)
+      short=${arg#-}
+      other=""
+      while [ -n "$short" ]; do
+        c=$(printf "%s" "$short" | cut -c1)
+        short=$(printf "%s" "$short" | cut -c2-)
+        case "$c" in
+          a)
+            add_all=true
+            ;;
+          i)
+            include_files=true
+            ;;
+          m)
+            message_specified=true
+            if [ -n "$short" ]; then
+              # -mMESSAGE style: consume the remainder as the message
+              short=""
+            else
+              # -m MESSAGE style: skip next argument
+              skip_next=true
+            fi
+            ;;
+          *)
+            other="${other}${c}"
+            ;;
+        esac
+      done
+      if [ -n "$other" ]; then
+        args="$args -$other"
+      fi
+      continue
+      ;;
+  esac
+
   # Check for -m=message format
   case "$arg" in
     -m=*|--message=*)
@@ -88,10 +125,10 @@ if [ "$is_amend" = true ]; then
     echo "No previous commit found."
     exit 1
   fi
-  
+
   # Get the diff of the last commit
   diff=$(git show HEAD --format= --no-color)
-  
+
   if [ -z "$diff" ]; then
     echo "No changes found in the last commit."
     exit 1
@@ -104,7 +141,7 @@ else
     echo "No staged changes to commit."
     exit 1
   fi
-  
+
   # Get the staged diff
   diff=$(git diff --cached)
 fi
