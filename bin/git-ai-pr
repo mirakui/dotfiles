@@ -1,0 +1,239 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# git ai-pr: Generate GitHub Pull Request title/body using AI, then create PR via gh.
+#
+# Usage:
+#   git ai-pr [--base <branch>] [--draft] [--cursor] [--model <claude-model>] [--] [extra gh pr create args...]
+#
+# Notes:
+# - Requires: git, gh, jq, and either `claude` or `cursor-agent`.
+
+usage() {
+  cat >&2 <<'EOF'
+Usage:
+  git ai-pr [options] [--] [extra gh pr create args...]
+
+Options:
+  --base <branch>    Base branch name (default: repo default branch, fallback: main)
+  --draft            Create as draft PR
+  --cursor           Use cursor-agent instead of claude
+  --model <model>    Claude model name (default: claude-haiku-4-5)
+  -h, --help         Show this help
+
+Examples:
+  git ai-pr
+  git ai-pr --base main --draft
+  git ai-pr --cursor -- --label "chore" --reviewer "someone"
+EOF
+}
+
+DEFAULT_MODEL="claude-haiku-4-5"
+
+base_branch=""
+draft=false
+use_cursor=false
+model="${GIT_AI_PR_MODEL:-$DEFAULT_MODEL}"
+gh_args=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --base)
+      shift
+      [[ $# -ge 1 ]] || { echo "Error: --base requires an argument" >&2; usage; exit 2; }
+      base_branch="$1"
+      shift
+      ;;
+    --base=*)
+      base_branch="${1#--base=}"
+      shift
+      ;;
+    --draft)
+      draft=true
+      shift
+      ;;
+    --cursor)
+      use_cursor=true
+      shift
+      ;;
+    --model)
+      shift
+      [[ $# -ge 1 ]] || { echo "Error: --model requires an argument" >&2; usage; exit 2; }
+      model="$1"
+      shift
+      ;;
+    --model=*)
+      model="${1#--model=}"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      while [[ $# -gt 0 ]]; do
+        gh_args+=("$1")
+        shift
+      done
+      ;;
+    *)
+      # pass-through to gh pr create
+      gh_args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+require_cmd() {
+  local c="$1"
+  command -v "$c" >/dev/null 2>&1 || { echo "Error: required command not found: $c" >&2; exit 127; }
+}
+
+require_cmd git
+require_cmd gh
+require_cmd jq
+if [[ "$use_cursor" == true ]]; then
+  require_cmd cursor-agent
+else
+  require_cmd claude
+fi
+
+# Ensure inside a git repo
+if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+  echo "Error: not inside a git repository" >&2
+  exit 1
+fi
+
+head_branch="$(git rev-parse --abbrev-ref HEAD)"
+if [[ "$head_branch" == "HEAD" ]]; then
+  echo "Error: detached HEAD is not supported" >&2
+  exit 1
+fi
+
+if [[ -z "$base_branch" ]]; then
+  # Prefer gh repo default branch
+  if base_branch="$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null)"; then
+    :
+  else
+    # Fallback: origin/HEAD symbolic ref
+    base_branch="$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || true)"
+  fi
+  [[ -n "$base_branch" ]] || base_branch="main"
+fi
+
+base_ref="$base_branch"
+if git rev-parse --verify "origin/${base_branch}" >/dev/null 2>&1; then
+  base_ref="origin/${base_branch}"
+fi
+
+diff="$(git diff --no-color "${base_ref}...HEAD")"
+if [[ -z "$diff" ]]; then
+  echo "No changes found between ${base_ref} and HEAD." >&2
+  exit 1
+fi
+
+log="$(git log --oneline "${base_ref}...HEAD" 2>/dev/null || true)"
+
+JSON_SCHEMA='{"type":"object","properties":{"title":{"type":"string"},"body":{"type":"string"}},"required":["title","body"]}'
+
+prompt=$'You are an expert software engineer.\n\
+Generate a GitHub Pull Request title and body based on the diff and commit summary.\n\
+Rules:\n\
+- title MUST follow Conventional Commits: type(scope?): short summary\n\
+- Types allowed: feat, fix, docs, style, refactor, test, chore\n\
+- title MUST be a single line, English only, no trailing period, <= 72 chars preferred\n\
+- body MUST be Markdown (NOT JSON). Do NOT wrap the whole body in a JSON object.\n\
+- body should include: summary, key changes, and any notes for reviewers.\n\
+\n\
+Context:\n\
+- Base branch: '"${base_branch}"$'\n\
+- Head branch: '"${head_branch}"$'\n\
+\n\
+Commit summary:\n\
+'"${log}"$'\n\
+\n\
+Diff:\n\
+'"${diff}"
+
+title=""
+body=""
+
+coerce_title() {
+  local t="$1"
+  # normalize whitespace
+  t="$(printf '%s' "$t" | tr '\n' ' ' | sed 's/[[:space:]]\{1,\}/ /g; s/^[[:space:]]*//; s/[[:space:]]*$//')"
+  # remove surrounding quotes if any
+  t="$(printf '%s' "$t" | sed 's/^"//; s/"$//; s/^'\''//; s/'\''$//')"
+  # ensure conventional commits prefix
+  if ! printf '%s' "$t" | grep -Eq '^(feat|fix|docs|style|refactor|test|chore)(\([^)]+\))?: .+'; then
+    t="chore: ${t}"
+  fi
+  # drop trailing period
+  t="$(printf '%s' "$t" | sed 's/\.$//')"
+  # truncate (best-effort) to 72 chars
+  if [[ ${#t} -gt 72 ]]; then
+    t="${t:0:72}"
+    t="$(printf '%s' "$t" | sed 's/[[:space:]]*$//')"
+  fi
+  printf '%s' "$t"
+}
+
+coerce_body() {
+  local b="$1"
+  # If body itself is a JSON object with title/body, extract body.
+  if printf '%s' "$b" | jq -e 'type=="object" and has("body")' >/dev/null 2>&1; then
+    b="$(printf '%s' "$b" | jq -r '.body')"
+  fi
+  # If body looks like JSON from a "structured_output" blob, extract that too.
+  if printf '%s' "$b" | jq -e 'type=="object" and has("structured_output") and (.structured_output|has("body"))' >/dev/null 2>&1; then
+    b="$(printf '%s' "$b" | jq -r '.structured_output.body')"
+  fi
+  # normalize CRLF
+  b="$(printf '%s' "$b" | tr -d '\r')"
+  printf '%s' "$b"
+}
+
+if [[ "$use_cursor" == true ]]; then
+  # cursor-agent path: ask it to emit JSON directly
+  ai_text="$(printf '%s' "$prompt" | cursor-agent -p --model composer-1)"
+  if printf '%s' "$ai_text" | jq -e 'type=="object" and has("title") and has("body")' >/dev/null 2>&1; then
+    title="$(printf '%s' "$ai_text" | jq -r '.title')"
+    body="$(printf '%s' "$ai_text" | jq -r '.body')"
+  else
+    # Fallback: first non-empty line as title, rest as body
+    title="$(printf '%s\n' "$ai_text" | sed '/^[[:space:]]*$/d' | head -n 1)"
+    body="$(printf '%s\n' "$ai_text" | sed '1{/^[[:space:]]*$/d;}' | tail -n +2)"
+  fi
+else
+  # claude path: structured output JSON
+  ai_json="$(claude -p --output-format json --model "$model" --json-schema "$JSON_SCHEMA" "$prompt")"
+  title="$(printf '%s' "$ai_json" | jq -r '.structured_output.title // empty')"
+  body="$(printf '%s' "$ai_json" | jq -r '.structured_output.body // empty')"
+  if [[ -z "$title" || -z "$body" ]]; then
+    # Some models may ignore schema and output JSON in content text; try to recover.
+    maybe_text="$(printf '%s' "$ai_json" | jq -r '.content[0].text // empty')"
+    if printf '%s' "$maybe_text" | jq -e 'type=="object" and has("title") and has("body")' >/dev/null 2>&1; then
+      title="$(printf '%s' "$maybe_text" | jq -r '.title')"
+      body="$(printf '%s' "$maybe_text" | jq -r '.body')"
+    fi
+  fi
+fi
+
+title="$(coerce_title "$title")"
+body="$(coerce_body "$body")"
+
+if [[ -z "$title" || -z "$body" || "$title" == "null" || "$body" == "null" ]]; then
+  echo "Failed to generate PR title/body." >&2
+  exit 1
+fi
+
+cmd=(gh pr create --base "$base_branch" --title "$title" --body "$body")
+if [[ "$draft" == true ]]; then
+  cmd+=(--draft)
+fi
+if [[ ${#gh_args[@]} -gt 0 ]]; then
+  cmd+=("${gh_args[@]}")
+fi
+
+exec "${cmd[@]}"
