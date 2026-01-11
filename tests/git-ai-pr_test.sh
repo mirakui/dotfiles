@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="${ROOT_DIR}/bin/git-ai-pr"
 
-tmp="$(mktemp -d)"
+mkdir -p "${ROOT_DIR}/.cctmp/scratch"
+tmp="$(mktemp -d "${ROOT_DIR}/.cctmp/scratch/git-ai-pr-test.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
 
 stub_bin="${tmp}/stub-bin"
@@ -109,3 +110,6 @@ grep -q -- "--base main" "$log_file"
 grep -q -- "--draft" "$log_file"
 grep -q -- "--title feat: add git-ai-pr" "$log_file"
 grep -q -- "--body This PR adds git-ai-pr." "$log_file"
+
+# Assertions: open browser after creating PR
+grep -q "gh pr view --web" "$log_file"
