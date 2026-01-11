@@ -203,7 +203,8 @@ function scratch-new() {
 
 export FZF_DEFAULT_OPTS="--layout reverse --border --height 20% --tac"
 
-function git-branch-new() { echo -n "branch suffix: "
+function git-branch-new() {
+  echo -n "branch suffix: "
   read suffix
   branch_name="naruta/$(date '+%Y%m%d')_${suffix}"
   git checkout -b $branch_name
