@@ -4,7 +4,7 @@ set -euo pipefail
 # git ai-pr: Generate GitHub Pull Request title/body using AI, then create PR via gh.
 #
 # Usage:
-#   git ai-pr [--base <branch>] [--draft] [--cursor] [--model <claude-model>] [--] [extra gh pr create args...]
+#   git ai-pr [--base <branch>] [--draft] [--cursor] [--model <claude-model>] [--no-open] [--] [extra gh pr create args...]
 #
 # Notes:
 # - Requires: git, gh, jq, and either `claude` or `cursor-agent`.
@@ -19,6 +19,7 @@ Options:
   --draft            Create as draft PR
   --cursor           Use cursor-agent instead of claude
   --model <model>    Claude model name (default: claude-haiku-4-5)
+  --no-open          Do not open the created PR in the browser
   -h, --help         Show this help
 
 Examples:
@@ -33,6 +34,7 @@ DEFAULT_MODEL="claude-haiku-4-5"
 base_branch=""
 draft=false
 use_cursor=false
+open_browser=true
 model="${GIT_AI_PR_MODEL:-$DEFAULT_MODEL}"
 gh_args=()
 
@@ -50,6 +52,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --draft)
       draft=true
+      shift
+      ;;
+    --no-open)
+      open_browser=false
       shift
       ;;
     --cursor)
@@ -236,4 +242,8 @@ if [[ ${#gh_args[@]} -gt 0 ]]; then
   cmd+=("${gh_args[@]}")
 fi
 
-exec "${cmd[@]}"
+"${cmd[@]}"
+
+if [[ "$open_browser" == true ]]; then
+  gh pr view --web
+fi
