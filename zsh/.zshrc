@@ -203,8 +203,7 @@ function scratch-new() {
 
 export FZF_DEFAULT_OPTS="--layout reverse --border --height 20% --tac"
 
-function git-branch-new() {
-  echo -n "branch suffix: "
+function git-branch-new() { echo -n "branch suffix: "
   read suffix
   branch_name="naruta/$(date '+%Y%m%d')_${suffix}"
   git checkout -b $branch_name
@@ -438,4 +437,12 @@ if [[ -s "$HOME/.bun/_bun" ]]; then
     source "$HOME/.bun/_bun"
   }
   _lazy_load_cmd bun _init_bun_completion
+fi
+
+# wtp
+if [[ -x $HOMEBREW_PREFIX/bin/wtp ]]; then
+  function _init_wtp() {
+    eval "$(wtp shell-init zsh)"
+  }
+  _lazy_load_cmd wtp _init_wtp
 fi
