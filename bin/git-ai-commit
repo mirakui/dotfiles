@@ -1,0 +1,144 @@
+#!/bin/sh
+
+# Original: https://gist.github.com/takai/39c2ef7ce9696e538811f7fe847bf003
+#
+# git ai-commit: Generate commit messages using AI
+#
+# For zsh completion, add to your ~/.zshrc:
+# zstyle ':completion:*:*:git:*' user-commands ai-commit:'generate commit message using AI'
+
+# Parse arguments to check if --amend is present
+args=""
+message_specified=false
+is_amend=false
+use_cursor=false
+skip_next=false
+add_all=false
+include_files=false
+files_to_add=""
+
+for arg in "$@"; do
+  if [ "$skip_next" = true ]; then
+    skip_next=false
+    continue
+  fi
+  
+  if [ "$arg" = "-m" ] || [ "$arg" = "--message" ]; then
+    message_specified=true
+    skip_next=true
+    continue
+  fi
+  
+  if [ "$arg" = "--amend" ]; then
+    is_amend=true
+    continue
+  fi
+  
+  if [ "$arg" = "--cursor" ]; then
+    use_cursor=true
+    continue
+  fi
+  
+  if [ "$arg" = "-a" ] || [ "$arg" = "--all" ]; then
+    add_all=true
+    continue
+  fi
+  
+  if [ "$arg" = "-i" ] || [ "$arg" = "--include" ]; then
+    include_files=true
+    continue
+  fi
+  
+  # Check for -m=message format
+  case "$arg" in
+    -m=*|--message=*)
+      message_specified=true
+      continue
+      ;;
+    -*)
+      # Other options, keep them
+      args="$args $arg"
+      ;;
+    *)
+      # If -i is set, treat non-option args as files to add
+      if [ "$include_files" = true ]; then
+        files_to_add="$files_to_add $arg"
+      else
+        args="$args $arg"
+      fi
+      ;;
+  esac
+done
+
+# Handle -a and -i options before generating commit message
+if [ "$add_all" = true ]; then
+  # Stage all modified and deleted files
+  git add -u
+elif [ "$include_files" = true ]; then
+  # Add specified files to index
+  if [ -n "$files_to_add" ]; then
+    git add $files_to_add
+  fi
+fi
+
+# Generate commit message using AI
+if [ "$is_amend" = true ]; then
+  # Check if there is a previous commit
+  if ! git rev-parse HEAD >/dev/null 2>&1; then
+    echo "No previous commit found."
+    exit 1
+  fi
+  
+  # Get the diff of the last commit
+  diff=$(git show HEAD --format= --no-color)
+  
+  if [ -z "$diff" ]; then
+    echo "No changes found in the last commit."
+    exit 1
+  fi
+else
+  # Check if there are staged changes
+  if ! git diff --cached --quiet; then
+    :
+  else
+    echo "No staged changes to commit."
+    exit 1
+  fi
+  
+  # Get the staged diff
+  diff=$(git diff --cached)
+fi
+
+prompt="Generate a single-line commit message following the Conventional Commits specification.
+
+Rules:
+- IMPORTANT: Output only the commit message
+- Format: type: short summary
+- One line only
+- Types allowed: feat, fix, docs, style, refactor, test, chore
+- English only
+- No trailing period
+- Summary under 72 characters
+- Do not wrap the message in quotes or backticks
+- Make sure with version bump if needed
+
+Write the commit message based on the following git diff:
+$diff"
+
+if [ "$use_cursor" = true ]; then
+  message=$(echo "$prompt" | cursor-agent -p --model composer-1)
+else
+  message=$(echo "$prompt" | claude -p --model haiku)
+fi
+
+if [ -z "$message" ]; then
+  echo "Failed to generate commit message."
+  exit 1
+fi
+
+# Execute git commit with the generated message
+if [ "$is_amend" = true ]; then
+  git commit --amend -m "$message" $args
+else
+  git commit -m "$message" $args
+fi
