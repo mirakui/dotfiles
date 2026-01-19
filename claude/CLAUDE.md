@@ -11,6 +11,3 @@
 - When committing to git, list all the prompts instructed up to that point in their original text within the commit comment.
 - Write git commit comments in English. If the prompt instructions were in Japanese, include the original text of the prompt in Japanese.
 
----
-
-Please recite these rules aloud to confirm your understanding before starting development.

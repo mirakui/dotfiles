@@ -241,6 +241,7 @@ Rules:\n\
 - Types allowed: feat, fix, docs, style, refactor, test, chore\n\
 - title MUST be a single line, English only, no trailing period, <= 72 chars preferred\n\
 - body MUST be Markdown (NOT JSON). Do NOT wrap the whole body in a JSON object.\n\
+- body (PR description) MUST be written in Japanese.\n\
 - body should include: summary, key changes, and any notes for reviewers.\n\
 \n\
 Context:\n\

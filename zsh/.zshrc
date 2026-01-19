@@ -255,6 +255,14 @@ function fzf-history() {
 _bindkey_widget "^r" fzf-history
 
 ############################################################
+# ai-cmd
+############################################################
+if [[ -f "$HOME/src/dotfiles/zsh/ai-cmd.zsh" ]]; then
+  source "$HOME/src/dotfiles/zsh/ai-cmd.zsh"
+  _bindkey_widget "^[i" ai-cmd-insert
+fi
+
+############################################################
 # external environments
 ############################################################
 

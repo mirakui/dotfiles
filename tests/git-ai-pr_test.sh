@@ -16,8 +16,9 @@ touch "$log_file"
 
 body_file="${tmp}/gh_body.txt"
 title_file="${tmp}/gh_title.txt"
+prompt_file="${tmp}/ai_prompt.txt"
 stderr_file="${tmp}/stderr.txt"
-touch "$body_file" "$title_file" "$stderr_file"
+touch "$body_file" "$title_file" "$prompt_file" "$stderr_file"
 
 fake_repo="${tmp}/repo"
 mkdir -p "$fake_repo"
@@ -26,6 +27,7 @@ reset_case_files() {
   : >"$log_file"
   : >"$body_file"
   : >"$title_file"
+  : >"$prompt_file"
   : >"$stderr_file"
 }
 
@@ -123,6 +125,9 @@ cat > "${stub_bin}/claude" <<EOF
 set -e
 echo "claude \$*" >> "${log_file}"
 
+# Capture the last arg (the prompt) for assertions (may contain newlines)
+printf '%s' "\${@: -1}" > "${prompt_file}"
+
 # Simulate \`claude --output-format json\` returning structured_output
 cat <<JSON
 {"structured_output":{"title":"feat: add git-ai-pr","body":"This PR adds git-ai-pr."}}
@@ -148,6 +153,8 @@ grep -q -- "--draft" "$log_file"
 grep -q -- "gh pr view --web" "$log_file"
 grep -q -- "feat: add git-ai-pr" "$title_file"
 grep -q -- "This PR adds git-ai-pr." "$body_file"
+# Ensure the PR description instruction explicitly says Japanese
+grep -q -- "body (PR description) MUST be written in Japanese" "$prompt_file"
 
 # Case 2: single template -> inject AI body after first matching heading
 mkdir -p "${fake_repo}/.github"
