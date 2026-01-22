@@ -72,4 +72,11 @@ return {
     },
     -- TODO: cmd+u で Opacity をいじりたい
   },
+  hyperlink_rules = {
+    {
+      -- リンクにしたいものを明示することで email の自動リンクを除外
+      regex = [[\bhttps?://\S+\b]],
+      format = "$0",
+    },
+  },
 }
