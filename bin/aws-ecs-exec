@@ -1,0 +1,31 @@
+#!/usr/bin/env bash -euo pipefail
+
+EXEC_COMMAND="/bin/bash"
+
+CLUSTER_ARN=$(aws ecs list-clusters | jq -r '.clusterArns.[]' | fzf)
+
+if [[ -z "$CLUSTER_ARN" ]]; then
+  echo "No cluster selected" >&2
+  exit 1
+fi
+
+SERVICE_NAME=$(aws ecs list-services --cluster $CLUSTER_ARN | jq -r '.serviceArns.[]' | fzf)
+if [[ -z "$SERVICE_NAME" ]]; then
+  echo "No service selected" >&2
+  exit 1
+fi
+
+TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER_ARN --service-name $SERVICE_NAME | jq -r '.taskArns.[]' | fzf)
+if [[ -z "$TASK_ARN" ]]; then
+  echo "No task selected" >&2
+  exit 1
+fi
+
+CONTAINER_NAME=$(aws ecs describe-tasks --cluster $CLUSTER_ARN --tasks $TASK_ARN | jq -r '.tasks[0].containers[0].name')
+if [[ -z "$CONTAINER_NAME" ]]; then
+  echo "No container selected" >&2
+  exit 1
+fi
+
+set -x
+exec aws ecs execute-command --cluster $CLUSTER_ARN --task $TASK_ARN --container $CONTAINER_NAME --command $EXEC_COMMAND --interactive
