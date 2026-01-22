@@ -219,10 +219,19 @@ function fzf-git-files() {
 }
 _bindkey_widget "^g" fzf-git-files
 
+function _refresh_prompt_after_cd() {
+  local zle_info
+  zle_info=$(whence -w zle 2>/dev/null || true)
+  [[ "$zle_info" == *builtin* ]] || return 0
+  zle reset-prompt
+  zle -R
+}
+
 function fzf-git-dirs() {
   SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf)
   if [ -n "$SELECTED" ]; then
     cd $SELECTED
+    _refresh_prompt_after_cd
   fi
   zle redisplay
 }
@@ -233,6 +242,7 @@ function fzf-git-repos() {
   SELECTED=$(echo $SELECTED | sed "s=^~=${HOME}=")
   if [ -n "$SELECTED" ]; then
     cd $SELECTED
+    _refresh_prompt_after_cd
   fi
   zle redisplay
 }
