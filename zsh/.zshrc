@@ -87,7 +87,7 @@ alias st='gf status'
 alias co='git checkout'
 alias gg='gf grep -n -E'
 alias gls='git ls-files'
-function gp() { BRANCH=$(git rev-parse --abbrev-ref HEAD); git pull --rebase origin $BRANCH }
+function gp() { BRANCH=$(git rev-parse --abbrev-ref HEAD); git fetch origin; git pull --rebase origin $BRANCH }
 function gpp() { BRANCH=$(git rev-parse --abbrev-ref HEAD); git pull --rebase origin $BRANCH && git push origin $BRANCH }
 alias tmux-chdir-here="pwd | xargs tmux set -g default-path"
 alias tmux-copy-buffer="tmux show-buffer | pbcopy"
@@ -258,7 +258,7 @@ function fzf-git-branches() {
 _bindkey_widget "^[b" fzf-git-branches
 
 function fzf-history() {
-  BUFFER=$(history -n 1 | fzf --no-sort --query="$LBUFFER")
+  BUFFER=$(history -n 1 | fzf --no-sort --query="^$LBUFFER")
   CURSOR=$#BUFFER
   zle redisplay
 }
@@ -278,6 +278,14 @@ fi
 
 # gpg
 export GPG_TTY=$TTY
+
+# 1Password CLI (lazy loading)
+if [[ -x "$HOMEBREW_PREFIX/bin/op" ]]; then
+  function _init_op_signin() {
+    eval "$("$HOMEBREW_PREFIX/bin/op" signin)"
+  }
+  _lazy_load_cmd op _init_op_signin
+fi
 
 # rbenv (lazy loading for faster startup)
 export PATH=$HOME/.rbenv/bin:$PATH
@@ -465,3 +473,12 @@ if [[ -x $HOMEBREW_PREFIX/bin/wtp ]]; then
   }
   _lazy_load_cmd wtp _init_wtp
 fi
+
+# zellij
+if [[ -x $HOMEBREW_PREFIX/bin/zellij ]]; then
+  function _init_zellij() {
+    eval "$(zellij setup --generate-completion zsh)"
+  }
+  _lazy_load_cmd zellij _init_zellij
+fi
+
