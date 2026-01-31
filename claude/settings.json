@@ -61,6 +61,7 @@
       "Fetch(https://docs.aws.amazon.com/*)",
       "Fetch(https://registry.terraform.io/*)",
       "Fetch(https://docs.databricks.com/*)",
+      "Read(~/.claude/contexts/*.md)",
       "WebSearch",
       "WebFetch(domain:strandsagents.com)",
       "WebFetch(domain:aws.amazon.com)"
