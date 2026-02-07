@@ -80,7 +80,11 @@ alias vvp='vi --clean ~/.vimrc.plugins'
 alias vh='sudo vi /etc/hosts && dscacheutil -flushcache'
 alias vw='vi ~/.config/wezterm/wezterm.lua'
 alias vcc='vi -p ~/.claude/settings.json ~/.claude/CLAUDE.md'
-alias claude='AWS_PROFILE="" claude'
+alias claude='AWS_PROFILE="" \claude'
+alias claude-dev='AWS_PROFILE="" \claude --append-system-prompt "read @~/.claude/contexts/dev.md" --allow-dangerously-skip-permissions'
+alias claude-review='AWS_PROFILE="" \claude --append-system-prompt "read @~/.claude/contexts/review.md " --allow-dangerously-skip-permissions'
+alias claude-research='AWS_PROFILE="" \claude --append-system-prompt "read @~/.claude/contexts/research.md" --allow-dangerously-skip-permissions'
+alias claude-gal='AWS_PROFILE="" \claude --append-system-prompt "read @~/.claude/contexts/gal.md"'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 #alias st='gf status -sbu'
 alias st='gf status'
@@ -481,4 +485,8 @@ if [[ -x $HOMEBREW_PREFIX/bin/zellij ]]; then
   }
   _lazy_load_cmd zellij _init_zellij
 fi
+
+# gj
+
+eval "$(gj shell-init zsh)"
 

@@ -28,6 +28,9 @@ vim.api.nvim_set_keymap('n', 'tn', ':tabnext<CR>', { noremap = true, silent = tr
 vim.api.nvim_set_keymap('n', 'tp', ':tabNext<CR>', { noremap = true, silent = true })
 vim.api.nvim_set_keymap('n', 'td', ':tabclose<CR>', { noremap = true, silent = true })
 
+-- C-c を Esc にマッピング（InsertLeave autocmd が発火するようにする）
+vim.api.nvim_set_keymap('i', '<C-c>', '<Esc>', { noremap = true, silent = true })
+
 -- nvim-tree
 vim.api.nvim_set_keymap('n', '<Space>n', ':NvimTreeToggle<CR>', { noremap = true, silent = true })
 
