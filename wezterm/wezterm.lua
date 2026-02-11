@@ -14,6 +14,41 @@ function shorten_path(path)
   end
 end
 
+local function is_claude(pane)
+  local process = pane:get_foreground_process_info()
+  if not process or not process.argv then
+    return false
+  end
+  for _, arg in ipairs(process.argv) do
+    if arg:find("claude") then
+      return true
+    end
+  end
+  return false
+end
+
+local function get_tab_id(window, pane)
+  local mux_window = window:mux_window()
+  for i, tab_info in ipairs(mux_window:tabs_with_info()) do
+    for _, p in ipairs(tab_info.tab:panes()) do
+      if p:pane_id() == pane:pane_id() then
+        return i
+      end
+    end
+  end
+end
+
+wezterm.on('bell', function(window, pane)
+  if is_claude(pane) then
+    local tab_id = get_tab_id(window, pane)
+    local message = 'Task completed'
+    if tab_id then
+      message = message .. ' (tab ' .. tab_id .. ')'
+    end
+    window:toast_notification('Claude Code', message, nil, 4000)
+  end
+end)
+
 wezterm.on(
   'format-tab-title',
   function(tab, tabs, panes, config, hover, max_width)
@@ -48,6 +83,7 @@ wezterm.on(
 )
 
 return {
+  audible_bell = "Disabled",
   -- https://www.nerdfonts.com/
   -- brew install mononoki-nerd-font
   font = wezterm.font_with_fallback {
