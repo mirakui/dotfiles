@@ -67,7 +67,8 @@ Use the existing PR body (already fetched in Step 4 via `gh pr view --json body`
 Edit it based on the full diff from base branch and all commit messages — do NOT rewrite from scratch.
 
 Rules:
-- Preserve any hand-written content in the existing body
+- Preserve any hand-written content that is still accurate
+- If any part of the existing body has drifted from the actual changes (e.g., outdated summary, stale test plan), overwrite that part to match the current state
 - Update the `## Summary` section to reflect the current state of ALL changes from base branch
 - Update the `## Test plan` section if needed
 - If the body is empty, create a new one using the format below
