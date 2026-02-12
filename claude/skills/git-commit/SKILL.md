@@ -55,10 +55,8 @@ Format:
 ```
 
 - Types: feat, fix, refactor, docs, test, chore, perf, ci
-- Description: concise, lowercase, imperative mood
-- Body: only if the change needs explanation
-- Do NOT add Co-Authored-By lines
-
+- Description: concise, lowercase, imperative mood, always in English
+- Body: only if the change needs explanation, always in English
 ## Step 5: Commit
 
 Use HEREDOC format to commit:
@@ -68,9 +66,17 @@ git commit -m "$(cat <<'EOF'
 <type>: <description>
 
 <optional body>
+
+Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 ```
+
+If the commit fails because a pre-commit hook (formatter, linter, etc.) modified files:
+
+1. Re-stage the same files from Step 3: `git add <file1> <file2> ...`
+2. Retry the commit with the same message
+3. Retry only once — if it fails again, report the error and stop
 
 ## Step 6: Report
 

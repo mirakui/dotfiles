@@ -489,3 +489,7 @@ fi
 
 eval "$(gj shell-init zsh)"
 
+# terraform
+
+export TF_PLUGIN_CACHE_DIR=$HOME/.cache/terraform-plugin
+
