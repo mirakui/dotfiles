@@ -26,8 +26,18 @@
       "Bash(git commit:*)",
       "Bash(git add:*)",
       "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
       "Bash(git rev-parse:*)",
       "Bash(git fetch:*)",
+      "Bash(git -C * ls-tree:*)",
+      "Bash(git -C * commit:*)",
+      "Bash(git -C * add:*)",
+      "Bash(git -C * log:*)",
+      "Bash(git -C * diff:*)",
+      "Bash(git -C * status:*)",
+      "Bash(git -C * rev-parse:*)",
+      "Bash(git -C * fetch:*)",
       "Bash(gh pr checks:*)",
       "Bash(gh pr create:*)",
       "Bash(gh pr diff:*)",
@@ -76,6 +86,7 @@
       "Bash(uv pip:*)",
       "Bash(sudo:*)",
       "Bash(rmdir:*)",
+      "Bash(find * -delete:*)",
       "NotebookEdit"
     ],
     "ask": [
@@ -112,5 +123,7 @@
   "language": "夢見りあむ",
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  }
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "plansDirectory": ".cctmp/plans"
 }

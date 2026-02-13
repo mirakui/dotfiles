@@ -147,6 +147,16 @@ return {
       mods = 'SHIFT',
       action = wezterm.action.SendString("\x1b\r")
     },
+    {
+      key = '{',
+      mods = 'ALT|SHIFT',
+      action = wezterm.action.MoveTabRelative(-1),
+    },
+    {
+      key = '}',
+      mods = 'ALT|SHIFT',
+      action = wezterm.action.MoveTabRelative(1),
+    },
     -- TODO: cmd+u で Opacity をいじりたい
   },
   hyperlink_rules = {
