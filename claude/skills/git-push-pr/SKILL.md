@@ -101,8 +101,8 @@ Then output the summary and stop.
 Analyze the full diff from base branch and all commit messages to draft a PR title and body.
 
 Rules:
-- PR title: 日本語で書く。70文字以内で簡潔に変更内容を説明する
-- PR body: written in English, same format as Step 5a
+- PR title: written in English, under 70 characters, concise description of changes
+- PR body: 日本語で書く。Step 5a と同じフォーマットを使用する
 
 Create the PR:
 
