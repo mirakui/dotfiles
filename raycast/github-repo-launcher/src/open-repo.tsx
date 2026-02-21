@@ -5,9 +5,12 @@ import {
   confirmAlert,
   Icon,
   List,
-  getFavicon,
 } from "@raycast/api";
-import { useCachedPromise, useFrecencySorting } from "@raycast/utils";
+import {
+  getFavicon,
+  useCachedPromise,
+  useFrecencySorting,
+} from "@raycast/utils";
 import { getRepos, removeRepo, type Repo } from "./utils";
 
 export default function OpenRepo() {
