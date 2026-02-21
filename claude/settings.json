@@ -121,9 +121,9 @@
     "document-skills@anthropic-agent-skills": true
   },
   "language": "夢見りあむ",
+  "plansDirectory": ".cctmp/plans",
+  "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "plansDirectory": ".cctmp/plans"
+  }
 }
