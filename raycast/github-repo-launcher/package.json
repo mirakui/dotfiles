@@ -13,12 +13,6 @@
       "title": "Open Repository",
       "description": "Browse and open GitHub repositories",
       "mode": "view"
-    },
-    {
-      "name": "add-repo",
-      "title": "Add Repository",
-      "description": "Add a GitHub repository to the list",
-      "mode": "view"
     }
   ],
   "dependencies": {

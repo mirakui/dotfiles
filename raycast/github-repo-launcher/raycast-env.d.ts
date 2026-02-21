@@ -15,14 +15,10 @@ declare type Preferences = ExtensionPreferences
 declare namespace Preferences {
   /** Preferences accessible in the `open-repo` command */
   export type OpenRepo = ExtensionPreferences & {}
-  /** Preferences accessible in the `add-repo` command */
-  export type AddRepo = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
   /** Arguments passed to the `open-repo` command */
   export type OpenRepo = {}
-  /** Arguments passed to the `add-repo` command */
-  export type AddRepo = {}
 }
 

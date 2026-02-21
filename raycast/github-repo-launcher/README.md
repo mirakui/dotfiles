@@ -26,10 +26,4 @@ Raycast の設定画面から「Extensions」を開き、`+` → 「Import Exten
 | ランキングをリセット | Cmd+Shift+R |
 | リストから削除 | Ctrl+X |
 
-### Add Repository
-
-リポジトリを追加する。以下の形式に対応:
-
-- `owner/repo`
-- `github.com/owner/repo`
-- `https://github.com/owner/repo`
+リストにないリポジトリは `owner/repo` や GitHub URL を入力すると「Add & Open」で追加しつつブラウザで開ける。
