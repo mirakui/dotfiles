@@ -1,0 +1,42 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "github-repo-launcher",
+  "title": "GitHub Repo Launcher",
+  "description": "Quickly open frequently used GitHub repositories",
+  "icon": "command-icon.png",
+  "author": "raycast",
+  "categories": ["Developer Tools"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "open-repo",
+      "title": "Open Repository",
+      "description": "Browse and open GitHub repositories",
+      "mode": "view"
+    },
+    {
+      "name": "add-repo",
+      "title": "Add Repository",
+      "description": "Add a GitHub repository to the list",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.93.3",
+    "@raycast/utils": "^1.19.1"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.x",
+    "@types/react": "19.x",
+    "eslint": "^8.57.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix"
+  }
+}
