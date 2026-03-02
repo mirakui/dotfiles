@@ -114,6 +114,25 @@
             "command": "~/.claude/scripts/deny-check.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash|WebSearch|WebFetch|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/hook-logger.sh"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/hook-logger.sh"
+          }
+        ]
       }
     ]
   },
