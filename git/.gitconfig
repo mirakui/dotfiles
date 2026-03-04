@@ -59,6 +59,7 @@
 	useHttpPath = true
 [commit]
 	gpgsign = true
+	verbose = true
 [gpg]
 	program = /usr/local/MacGPG2/bin/gpg2
 [init]
