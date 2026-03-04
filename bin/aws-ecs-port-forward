@@ -7,6 +7,62 @@ set -euo pipefail
 # 依存: aws, fzf, jq
 # -----------------------------------------------
 
+usage() {
+  cat <<'USAGE'
+Usage: aws-ecs-port-forward [OPTIONS]
+
+Options:
+  -h, --host HOST           リモートホスト (指定すると remote モード)
+  -l, --local-port PORT     ローカルポート番号
+  -r, --remote-port PORT    リモート/コンテナポート番号
+  -c, --cluster CLUSTER     ECS クラスター名
+  -t, --task TASK           タスク ARN またはタスク ID
+      --first-task          HEALTHY な最初のタスクを自動選択
+      --container CONTAINER コンテナ名
+      --help                このヘルプを表示
+
+未指定のオプションは対話的に選択します。
+
+Examples:
+  # フル指定 (remote モード)
+  aws-ecs-port-forward -h mydb.cluster-xxx.rds.amazonaws.com \
+    --local-port 15432 --remote-port 5432 --cluster datahub --container backend
+
+  # 対話モード
+  aws-ecs-port-forward
+USAGE
+  exit 0
+}
+
+# -----------------------------------------------
+# オプション解析
+# -----------------------------------------------
+OPT_HOST=""
+OPT_LOCAL_PORT=""
+OPT_REMOTE_PORT=""
+OPT_CLUSTER=""
+OPT_TASK=""
+OPT_FIRST_TASK=false
+OPT_CONTAINER=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help)       usage ;;
+    -h|--host)    OPT_HOST="$2"; shift 2 ;;
+    -l|--local-port)  OPT_LOCAL_PORT="$2"; shift 2 ;;
+    -r|--remote-port) OPT_REMOTE_PORT="$2"; shift 2 ;;
+    -c|--cluster)     OPT_CLUSTER="$2"; shift 2 ;;
+    -t|--task)        OPT_TASK="$2"; shift 2 ;;
+    --first-task)     OPT_FIRST_TASK=true; shift ;;
+    --container)      OPT_CONTAINER="$2"; shift 2 ;;
+    *)
+      echo "Error: 不明なオプション: $1" >&2
+      echo "  --help でヘルプを表示します。" >&2
+      exit 1
+      ;;
+  esac
+done
+
 # 依存コマンドチェック
 for cmd in aws fzf jq; do
   if ! command -v "$cmd" &>/dev/null; then
@@ -25,29 +81,64 @@ fi
 # -----------------------------------------------
 # Cluster 選択
 # -----------------------------------------------
-echo "▶ Cluster を選択してください..."
-CLUSTER=$(aws ecs list-clusters --query 'clusterArns[]' --output text \
-  | tr '\t' '\n' \
-  | sed 's|.*/||' \
-  | fzf --prompt="Cluster> " --height=40% --border)
+if [[ -n "$OPT_CLUSTER" ]]; then
+  CLUSTER="$OPT_CLUSTER"
+else
+  echo "▶ Cluster を選択してください..."
+  CLUSTER=$(aws ecs list-clusters --query 'clusterArns[]' --output text \
+    | tr '\t' '\n' \
+    | sed 's|.*/||' \
+    | fzf --prompt="Cluster> " --height=40% --border)
 
-if [[ -z "$CLUSTER" ]]; then
-  echo "キャンセルしました。" >&2
-  exit 0
+  if [[ -z "$CLUSTER" ]]; then
+    echo "キャンセルしました。" >&2
+    exit 0
+  fi
 fi
 echo "  Cluster: $CLUSTER"
 
 # -----------------------------------------------
 # Task 選択
 # -----------------------------------------------
-echo "▶ Task を選択してください..."
-TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
-  | tr '\t' '\n' \
-  | fzf --prompt="Task> " --height=40% --border)
+if [[ -n "$OPT_TASK" ]]; then
+  # ARN でもタスク ID でも受け付ける
+  if [[ "$OPT_TASK" == arn:* ]]; then
+    TASK_ARN="$OPT_TASK"
+  else
+    # タスク ID から ARN を取得
+    TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
+      | tr '\t' '\n' \
+      | grep "$OPT_TASK" \
+      | head -1)
+    if [[ -z "$TASK_ARN" ]]; then
+      echo "Error: タスク '$OPT_TASK' が見つかりません。" >&2
+      exit 1
+    fi
+  fi
+elif [[ "$OPT_FIRST_TASK" == true ]]; then
+  echo "▶ HEALTHY なタスクを自動選択中..."
+  ALL_TASK_ARNS=$(aws ecs list-tasks --cluster "$CLUSTER" --desired-status RUNNING --query 'taskArns[]' --output text \
+    | tr '\t' '\n')
+  if [[ -z "$ALL_TASK_ARNS" ]]; then
+    echo "Error: RUNNING 中のタスクが見つかりません。" >&2
+    exit 1
+  fi
+  TASK_ARN=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks $ALL_TASK_ARNS \
+    | jq -r '[.tasks[] | select(.healthStatus == "HEALTHY")] | .[0].taskArn // empty')
+  if [[ -z "$TASK_ARN" ]]; then
+    echo "Error: HEALTHY なタスクが見つかりません。" >&2
+    exit 1
+  fi
+else
+  echo "▶ Task を選択してください..."
+  TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
+    | tr '\t' '\n' \
+    | fzf --prompt="Task> " --height=40% --border)
 
-if [[ -z "$TASK_ARN" ]]; then
-  echo "キャンセルしました。" >&2
-  exit 0
+  if [[ -z "$TASK_ARN" ]]; then
+    echo "キャンセルしました。" >&2
+    exit 0
+  fi
 fi
 TASK_ID=$(echo "$TASK_ARN" | sed 's|.*/||')
 echo "  Task: $TASK_ID"
@@ -55,16 +146,20 @@ echo "  Task: $TASK_ID"
 # -----------------------------------------------
 # Container 選択 & runtimeId 取得
 # -----------------------------------------------
-echo "▶ Container を選択してください..."
 TASK_JSON=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK_ARN")
 
-CONTAINER=$(echo "$TASK_JSON" \
-  | jq -r '.tasks[0].containers[].name' \
-  | fzf --prompt="Container> " --height=40% --border)
+if [[ -n "$OPT_CONTAINER" ]]; then
+  CONTAINER="$OPT_CONTAINER"
+else
+  echo "▶ Container を選択してください..."
+  CONTAINER=$(echo "$TASK_JSON" \
+    | jq -r '.tasks[0].containers[].name' \
+    | fzf --prompt="Container> " --height=40% --border)
 
-if [[ -z "$CONTAINER" ]]; then
-  echo "キャンセルしました。" >&2
-  exit 0
+  if [[ -z "$CONTAINER" ]]; then
+    echo "キャンセルしました。" >&2
+    exit 0
+  fi
 fi
 
 RUNTIME_ID=$(echo "$TASK_JSON" \
@@ -78,39 +173,58 @@ fi
 echo "  Container: $CONTAINER (runtimeId: $RUNTIME_ID)"
 
 # -----------------------------------------------
-# 転送モード選択
+# 転送モード決定
 # -----------------------------------------------
-echo "▶ 転送モードを選択してください..."
-MODE=$(printf "local  - コンテナ自身のポートへ転送 (AWS-StartPortForwardingSession)\nremote - VPC内リモートホストへ転送 (AWS-StartPortForwardingSessionToRemoteHost)" \
-  | fzf --prompt="Mode> " --height=40% --border \
-  | awk '{print $1}')
+if [[ -n "$OPT_HOST" ]]; then
+  MODE="remote"
+  REMOTE_HOST="$OPT_HOST"
+else
+  echo "▶ 転送モードを選択してください..."
+  MODE=$(printf "local  - コンテナ自身のポートへ転送 (AWS-StartPortForwardingSession)\nremote - VPC内リモートホストへ転送 (AWS-StartPortForwardingSessionToRemoteHost)" \
+    | fzf --prompt="Mode> " --height=40% --border \
+    | awk '{print $1}')
 
-if [[ -z "$MODE" ]]; then
-  echo "キャンセルしました。" >&2
-  exit 0
+  if [[ -z "$MODE" ]]; then
+    echo "キャンセルしました。" >&2
+    exit 0
+  fi
 fi
 
 # -----------------------------------------------
 # ポート番号入力
 # -----------------------------------------------
-read -rp "ローカルポート番号を入力してください (例: 15432): " LOCAL_PORT
-if [[ -z "$LOCAL_PORT" ]]; then
-  echo "Error: ローカルポートが入力されていません。" >&2
-  exit 1
+if [[ -n "$OPT_LOCAL_PORT" ]]; then
+  LOCAL_PORT="$OPT_LOCAL_PORT"
+else
+  read -rp "ローカルポート番号を入力してください (例: 15432): " LOCAL_PORT
+  if [[ -z "$LOCAL_PORT" ]]; then
+    echo "Error: ローカルポートが入力されていません。" >&2
+    exit 1
+  fi
 fi
 
 if [[ "$MODE" == "remote" ]]; then
-  read -rp "リモートホスト (例: mydb.cluster-xxxx.ap-northeast-1.rds.amazonaws.com): " REMOTE_HOST
-  read -rp "リモートポート番号 (例: 5432): " REMOTE_PORT
+  if [[ -z "${REMOTE_HOST:-}" ]]; then
+    read -rp "リモートホスト (例: mydb.cluster-xxxx.ap-northeast-1.rds.amazonaws.com): " REMOTE_HOST
+  fi
+  if [[ -n "$OPT_REMOTE_PORT" ]]; then
+    REMOTE_PORT="$OPT_REMOTE_PORT"
+  else
+    read -rp "リモートポート番号 (例: 5432): " REMOTE_PORT
+  fi
   if [[ -z "$REMOTE_HOST" || -z "$REMOTE_PORT" ]]; then
     echo "Error: リモートホストまたはリモートポートが入力されていません。" >&2
     exit 1
   fi
 else
-  read -rp "コンテナのポート番号 (例: 8080): " REMOTE_PORT
-  if [[ -z "$REMOTE_PORT" ]]; then
-    echo "Error: コンテナのポートが入力されていません。" >&2
-    exit 1
+  if [[ -n "$OPT_REMOTE_PORT" ]]; then
+    REMOTE_PORT="$OPT_REMOTE_PORT"
+  else
+    read -rp "コンテナのポート番号 (例: 8080): " REMOTE_PORT
+    if [[ -z "$REMOTE_PORT" ]]; then
+      echo "Error: コンテナのポートが入力されていません。" >&2
+      exit 1
+    fi
   fi
 fi
 
