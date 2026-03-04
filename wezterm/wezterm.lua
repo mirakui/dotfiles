@@ -87,7 +87,8 @@ return {
   -- https://www.nerdfonts.com/
   -- brew install mononoki-nerd-font
   font = wezterm.font_with_fallback {
-    { family = 'Mononoki Nerd Font', stretch = 'Expanded', weight = 'Regular' }
+    { family = 'Mononoki Nerd Font', stretch = 'Expanded', weight = 'Regular' },
+    { family = 'Hiragino Sans' },
   },
   use_ime = true,
   font_size = 13.0,
