@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# -----------------------------------------------
+# ecs-port-forward.sh
+# ECS タスクへの SSM port forwarding スクリプト
+# 依存: aws, fzf, jq
+# -----------------------------------------------
+
+# 依存コマンドチェック
+for cmd in aws fzf jq; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "Error: '$cmd' が見つかりません。インストールしてください。" >&2
+    exit 1
+  fi
+done
+
+# Session Manager plugin チェック
+if ! session-manager-plugin --version &>/dev/null 2>&1; then
+  echo "Error: 'session-manager-plugin' が見つかりません。" >&2
+  echo "  https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html" >&2
+  exit 1
+fi
+
+# -----------------------------------------------
+# Cluster 選択
+# -----------------------------------------------
+echo "▶ Cluster を選択してください..."
+CLUSTER=$(aws ecs list-clusters --query 'clusterArns[]' --output text \
+  | tr '\t' '\n' \
+  | sed 's|.*/||' \
+  | fzf --prompt="Cluster> " --height=40% --border)
+
+if [[ -z "$CLUSTER" ]]; then
+  echo "キャンセルしました。" >&2
+  exit 0
+fi
+echo "  Cluster: $CLUSTER"
+
+# -----------------------------------------------
+# Task 選択
+# -----------------------------------------------
+echo "▶ Task を選択してください..."
+TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
+  | tr '\t' '\n' \
+  | fzf --prompt="Task> " --height=40% --border)
+
+if [[ -z "$TASK_ARN" ]]; then
+  echo "キャンセルしました。" >&2
+  exit 0
+fi
+TASK_ID=$(echo "$TASK_ARN" | sed 's|.*/||')
+echo "  Task: $TASK_ID"
+
+# -----------------------------------------------
+# Container 選択 & runtimeId 取得
+# -----------------------------------------------
+echo "▶ Container を選択してください..."
+TASK_JSON=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK_ARN")
+
+CONTAINER=$(echo "$TASK_JSON" \
+  | jq -r '.tasks[0].containers[].name' \
+  | fzf --prompt="Container> " --height=40% --border)
+
+if [[ -z "$CONTAINER" ]]; then
+  echo "キャンセルしました。" >&2
+  exit 0
+fi
+
+RUNTIME_ID=$(echo "$TASK_JSON" \
+  | jq -r --arg name "$CONTAINER" \
+    '.tasks[0].containers[] | select(.name == $name) | .runtimeId')
+
+if [[ -z "$RUNTIME_ID" ]]; then
+  echo "Error: runtimeId が取得できませんでした。ECS Exec が有効になっていますか？" >&2
+  exit 1
+fi
+echo "  Container: $CONTAINER (runtimeId: $RUNTIME_ID)"
+
+# -----------------------------------------------
+# 転送モード選択
+# -----------------------------------------------
+echo "▶ 転送モードを選択してください..."
+MODE=$(printf "local  - コンテナ自身のポートへ転送 (AWS-StartPortForwardingSession)\nremote - VPC内リモートホストへ転送 (AWS-StartPortForwardingSessionToRemoteHost)" \
+  | fzf --prompt="Mode> " --height=40% --border \
+  | awk '{print $1}')
+
+if [[ -z "$MODE" ]]; then
+  echo "キャンセルしました。" >&2
+  exit 0
+fi
+
+# -----------------------------------------------
+# ポート番号入力
+# -----------------------------------------------
+read -rp "ローカルポート番号を入力してください (例: 15432): " LOCAL_PORT
+if [[ -z "$LOCAL_PORT" ]]; then
+  echo "Error: ローカルポートが入力されていません。" >&2
+  exit 1
+fi
+
+if [[ "$MODE" == "remote" ]]; then
+  read -rp "リモートホスト (例: mydb.cluster-xxxx.ap-northeast-1.rds.amazonaws.com): " REMOTE_HOST
+  read -rp "リモートポート番号 (例: 5432): " REMOTE_PORT
+  if [[ -z "$REMOTE_HOST" || -z "$REMOTE_PORT" ]]; then
+    echo "Error: リモートホストまたはリモートポートが入力されていません。" >&2
+    exit 1
+  fi
+else
+  read -rp "コンテナのポート番号 (例: 8080): " REMOTE_PORT
+  if [[ -z "$REMOTE_PORT" ]]; then
+    echo "Error: コンテナのポートが入力されていません。" >&2
+    exit 1
+  fi
+fi
+
+# -----------------------------------------------
+# SSM target 構築
+# -----------------------------------------------
+SSM_TARGET="ecs:${CLUSTER}_${TASK_ID}_${RUNTIME_ID}"
+
+# -----------------------------------------------
+# 実行
+# -----------------------------------------------
+echo ""
+echo "=========================================="
+echo "  Cluster      : $CLUSTER"
+echo "  Task         : $TASK_ID"
+echo "  Container    : $CONTAINER"
+echo "  Mode         : $MODE"
+if [[ "$MODE" == "remote" ]]; then
+  echo "  Remote Host  : $REMOTE_HOST"
+  echo "  Remote Port  : $REMOTE_PORT"
+else
+  echo "  Container Port: $REMOTE_PORT"
+fi
+echo "  Local Port   : $LOCAL_PORT"
+echo "  SSM Target   : $SSM_TARGET"
+echo "=========================================="
+echo ""
+echo "▶ Port forwarding を開始します... (Ctrl+C で終了)"
+echo ""
+
+if [[ "$MODE" == "remote" ]]; then
+  aws ssm start-session \
+    --target "$SSM_TARGET" \
+    --document-name AWS-StartPortForwardingSessionToRemoteHost \
+    --parameters "{\"host\":[\"${REMOTE_HOST}\"],\"portNumber\":[\"${REMOTE_PORT}\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+else
+  aws ssm start-session \
+    --target "$SSM_TARGET" \
+    --document-name AWS-StartPortForwardingSession \
+    --parameters "{\"portNumber\":[\"${REMOTE_PORT}\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}"
+fi
