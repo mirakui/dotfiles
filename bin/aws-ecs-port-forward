@@ -196,10 +196,9 @@ fi
 if [[ -n "$OPT_LOCAL_PORT" ]]; then
   LOCAL_PORT="$OPT_LOCAL_PORT"
 else
-  read -rp "ローカルポート番号を入力してください (例: 15432): " LOCAL_PORT
+  read -rp "ローカルポート番号を入力してください [15432]: " LOCAL_PORT
   if [[ -z "$LOCAL_PORT" ]]; then
-    echo "Error: ローカルポートが入力されていません。" >&2
-    exit 1
+    LOCAL_PORT=15432
   fi
 fi
 
@@ -210,7 +209,10 @@ if [[ "$MODE" == "remote" ]]; then
   if [[ -n "$OPT_REMOTE_PORT" ]]; then
     REMOTE_PORT="$OPT_REMOTE_PORT"
   else
-    read -rp "リモートポート番号 (例: 5432): " REMOTE_PORT
+    read -rp "リモートポート番号 [5432]: " REMOTE_PORT
+    if [[ -z "$REMOTE_PORT" ]]; then
+      REMOTE_PORT=5432
+    fi
   fi
   if [[ -z "$REMOTE_HOST" || -z "$REMOTE_PORT" ]]; then
     echo "Error: リモートホストまたはリモートポートが入力されていません。" >&2
@@ -220,10 +222,9 @@ else
   if [[ -n "$OPT_REMOTE_PORT" ]]; then
     REMOTE_PORT="$OPT_REMOTE_PORT"
   else
-    read -rp "コンテナのポート番号 (例: 8080): " REMOTE_PORT
+    read -rp "コンテナのポート番号 [5432]: " REMOTE_PORT
     if [[ -z "$REMOTE_PORT" ]]; then
-      echo "Error: コンテナのポートが入力されていません。" >&2
-      exit 1
+      REMOTE_PORT=5432
     fi
   fi
 fi
