@@ -20,6 +20,7 @@
 	pager = less
 	excludesfile = ~/.gitignore_global
 	sparsecheckout = true
+	commentString = ";"
 [hub]
 	host = ghe.ckpd.co
 [github "ghe.ckpd.co"]
@@ -36,7 +37,7 @@
 	smudge = git-media-smudge %f
 [push]
 	default = simple
-  autoSetupRemote = true
+	autoSetupRemote = true
 [merge "mergepbx"]
 	name = Xcode project files merger
 	driver = mergepbx %O %A %B
@@ -49,7 +50,7 @@
 	required = true
 	clean = git-lfs clean -- %f
 [rebase]
-	autostash = true
+	autoStash = true
 	abbreviateCommands = true
 	autosquash = true
 [credential]
@@ -64,3 +65,13 @@
 	program = /usr/local/MacGPG2/bin/gpg2
 [init]
 	defaultBranch = main
+[diff]
+	algorithm = histogram
+[merge]
+	conflictstyle = zdiff3
+[rerere]
+	enabled = true
+[fetch]
+	prune = true
+[pull]
+	rebase = true
