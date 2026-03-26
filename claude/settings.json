@@ -102,7 +102,7 @@
       "Bash(rm:*)",
       "Bash(wget:*)"
     ],
-    "defaultMode": "default"
+    "defaultMode": "auto"
   },
   "hooks": {
     "PreToolUse": [
@@ -143,7 +143,8 @@
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "sorah-guides@sorah-marketplace": true,
-    "sorah-spec@sorah-marketplace": true
+    "sorah-spec@sorah-marketplace": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
@@ -155,8 +156,10 @@
   },
   "language": "夢見りあむ",
   "plansDirectory": ".cctmp/plans",
+  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  }
+  },
+  "skipAutoPermissionPrompt": true
 }

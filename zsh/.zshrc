@@ -84,6 +84,7 @@ alias claude-dev='claude --append-system-prompt "read @~/.claude/contexts/dev.md
 alias claude-review='claude --append-system-prompt "read @~/.claude/contexts/review.md " --allow-dangerously-skip-permissions --enable-auto-mode'
 alias claude-research='claude --append-system-prompt "read @~/.claude/contexts/research.md" --allow-dangerously-skip-permissions --enable-auto-mode'
 alias claude-gal='claude --append-system-prompt "read @~/.claude/contexts/gal.md"'
+alias claude-coach='claude --append-system-prompt "read @~/.claude/contexts/coach.md" --enable-auto-mode'
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 #alias st='gf status -sbu'
 alias st='gf status'
@@ -214,7 +215,7 @@ function git-branch-new() {
 }
 
 function fzf-git-files() {
-  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | fzf)
+  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | fzf --scheme=path)
   if [ -n "$SELECTED" ]; then
     vi $SELECTED
   fi
@@ -231,7 +232,7 @@ function _refresh_prompt_after_cd() {
 }
 
 function fzf-git-dirs() {
-  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf)
+  SELECTED=$(git ls-files $(git rev-parse --show-toplevel) | sed 's=[^/]*$==g' | sort | uniq | grep -v '^$' | fzf --scheme=path)
   if [ -n "$SELECTED" ]; then
     cd $SELECTED
     _refresh_prompt_after_cd
@@ -241,7 +242,7 @@ function fzf-git-dirs() {
 _bindkey_widget "^[d" fzf-git-dirs
 
 function fzf-git-repos() {
-  SELECTED=$(tree -L1 --noreport -fdi ~/src/ ~/work | sed "s=${HOME}=~=" | fzf)
+  SELECTED=$(tree -L1 --noreport -fdi ~/src/ ~/work | sed "s=${HOME}=~=" | fzf --scheme=path)
   SELECTED=$(echo $SELECTED | sed "s=^~=${HOME}=")
   if [ -n "$SELECTED" ]; then
     cd $SELECTED
@@ -261,7 +262,7 @@ function fzf-git-branches() {
 _bindkey_widget "^[b" fzf-git-branches
 
 function fzf-history() {
-  BUFFER=$(history -n 1 | fzf --no-sort --query="^$LBUFFER")
+  BUFFER=$(history -n 1 | fzf --scheme=history --query="$LBUFFER")
   CURSOR=$#BUFFER
   zle redisplay
 }
@@ -492,4 +493,8 @@ eval "$(gj shell-init zsh)"
 # terraform
 
 export TF_PLUGIN_CACHE_DIR=$HOME/.cache/terraform-plugin
+
+# mise
+
+export MISE_GITHUB_TOKEN=$(gh auth token)
 
