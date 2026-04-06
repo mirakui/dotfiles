@@ -1,0 +1,105 @@
+---
+name: greptile-review-loop
+description: >-
+  Read Greptile review comments on a PR, fix issues, commit, push, reply to comments, and
+  re-request review in a loop until no issues remain. Takes a PR number as argument. Trigger on
+  "greptile", "review loop", "fix greptile", "greptile review", "address greptile comments".
+user-invocable: true
+argument-hint: <PR number>
+---
+
+# Greptile Review Loop
+
+Fix all Greptile review comments on a PR in an automated loop.
+
+## Input
+
+PR number from argument. Derive `{owner}/{repo}` from the current git remote.
+
+## Workflow
+
+Repeat the following loop until Greptile has no new comments:
+
+### 1. Wait for Greptile Review
+
+```bash
+gh pr checks <PR>
+```
+
+If "Greptile Review" is `pending`, poll every 30 seconds until it completes. If it is `pass` or `fail`, proceed.
+
+### 2. Fetch Greptile Comments
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{PR}/comments \
+  --jq '[.[] | select(.user.login == "greptile-apps[bot]")]'
+```
+
+For each comment, extract: `id`, `path`, `line`, `body`, `created_at`.
+
+Filter to only **new** comments — those created after the last fix commit's push timestamp. On the first iteration, all comments are new.
+
+### 3. Check for New Comments
+
+If 0 new comments: report "Greptile review complete — no new issues" and **exit the loop**.
+
+If comments exist: list them as a summary table (priority, file, one-line description) before fixing.
+
+### 4. Fix Issues
+
+For each comment:
+1. Read the file at the indicated path and line
+2. Understand the issue from the comment body (look for priority badges: P0 = must fix, P1 = should fix, P2 = consider)
+3. Apply the fix
+4. P0 and P1 issues must be fixed. P2 issues should be fixed if straightforward; skip with justification if not.
+
+### 5. Verify
+
+Run the project's lint, format, and test commands. Fix any failures before proceeding.
+
+Typical commands (adapt to the project):
+- `pnpm format && pnpm lint && pnpm test`
+- `mise run backend:test`
+
+### 6. Commit & Push
+
+Stage changed files individually (never `git add -A`). Commit with a descriptive message:
+
+```
+fix: address greptile review feedback
+
+- <summary of each fix>
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+Then `git push`.
+
+Record the commit short hash for step 7.
+
+### 7. Reply to Comments
+
+For each fixed comment, post a reply:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{PR}/comments/{comment_id}/replies \
+  -f body="Fixed in {short_hash}. {brief description of fix}"
+```
+
+For skipped P2 comments, reply explaining why it was skipped.
+
+### 8. Re-request Review
+
+```bash
+gh pr comment <PR> --body "@greptileai review"
+```
+
+### 9. Loop
+
+Go back to step 1.
+
+## Notes
+
+- Maximum 5 iterations to avoid infinite loops. If issues persist after 5 rounds, report remaining issues and stop.
+- Do not modify files outside the scope of Greptile's comments unless necessary to fix a reported issue.
+- If a comment is on code you didn't write in this PR, flag it to the user instead of fixing.
