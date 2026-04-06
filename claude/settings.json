@@ -101,7 +101,9 @@
       "WebFetch(domain:registry.terraform.io)",
       "WebFetch(domain:docs.aws.amazon.com)",
       "WebFetch(domain:docs.databricks.com)",
-      "WebFetch(domain:learn.microsoft.com)"
+      "WebFetch(domain:learn.microsoft.com)",
+      "mcp__claude_ai_Linear__get_issue",
+      "mcp__claude_ai_Linear__list_issues"
     ],
     "deny": [
       "Bash(terraform apply:*)",
@@ -163,15 +165,14 @@
   },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
-    "sorah-guides@sorah-marketplace": true,
-    "sorah-spec@sorah-marketplace": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
+    "rust-analyzer-lsp@claude-plugins-official": true,
+    "sorah-spec@sorah-marketplace": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
       "source": {
-        "source": "directory",
-        "path": "/Users/naruta/src/sorah_config/claude/marketplace"
+        "source": "git",
+        "url": "https://github.com/sorah/config.git"
       }
     }
   },
@@ -179,8 +180,8 @@
   "plansDirectory": ".cctmp/plans",
   "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  },
-  "skipAutoPermissionPrompt": true
+  }
 }
