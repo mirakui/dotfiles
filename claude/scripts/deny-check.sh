@@ -46,6 +46,17 @@ if [[ -z "$deny_patterns" ]]; then
   exit 0
 fi
 
+# Get alternative tool suggestion for denied commands
+get_alternative_message() {
+  local cmd="$1"
+  case "$cmd" in
+    npm*) echo "Use pnpm instead of npm." ;;
+    pip*) echo "Use uv instead of pip." ;;
+    rm*|rmdir*) echo "Use trash instead of rm/rmdir." ;;
+    *) echo "" ;;
+  esac
+}
+
 # Function to check if a command matches any deny pattern
 check_command() {
   local cmd="$1"
@@ -63,7 +74,12 @@ check_command() {
     # Use glob pattern matching
     # shellcheck disable=SC2053
     if [[ "$cmd" == $pattern ]] || [[ "$cmd" == $pattern* ]]; then
-      echo "DENIED: Command '$cmd' matches deny pattern '$pattern'" >&2
+      alt_msg=$(get_alternative_message "$cmd")
+      if [[ -n "$alt_msg" ]]; then
+        echo "DENIED: Command '$cmd' is forbidden. $alt_msg" >&2
+      else
+        echo "DENIED: Command '$cmd' matches deny pattern '$pattern'" >&2
+      fi
       return 1
     fi
   done <<< "$deny_patterns"

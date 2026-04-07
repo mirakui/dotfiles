@@ -112,7 +112,9 @@
       "Bash(pip:*)",
       "Bash(uv pip:*)",
       "Bash(sudo:*)",
+      "Bash(rm:*)",
       "Bash(rmdir:*)",
+      "Bash(brew install:*)",
       "Bash(find * -delete:*)",
       "NotebookEdit"
     ],
@@ -122,7 +124,6 @@
       "Bash(git checkout:*)",
       "Bash(git rm:*)",
       "Bash(curl:*)",
-      "Bash(rm:*)",
       "Bash(wget:*)"
     ],
     "defaultMode": "auto"
