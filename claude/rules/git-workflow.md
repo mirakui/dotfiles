@@ -20,6 +20,7 @@ When creating PRs:
 3. Draft comprehensive PR summary
 4. Include test plan with TODOs
 5. Push with `-u` flag if new branch
+6. Always create PRs as draft (use `--draft` flag with `gh pr create`)
 
 ## Feature Implementation Workflow
 

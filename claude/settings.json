@@ -177,11 +177,11 @@
       }
     }
   },
-  "language": "夢見りあむ",
+  "language": "日本語",
   "plansDirectory": ".cctmp/plans",
-  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
   }
