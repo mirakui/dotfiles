@@ -22,11 +22,23 @@ Repeat the following loop until Greptile has no new comments:
 
 ### 1. Wait for Greptile Review
 
+First check the current status:
+
 ```bash
 gh pr checks <PR>
 ```
 
-If "Greptile Review" is `pending`, poll every 30 seconds until it completes. If it is `pass` or `fail`, proceed.
+If "Greptile Review" is already `pass` or `fail`, proceed to step 2.
+
+If it is `pending`, use the **Monitor tool** to wait until it completes. Pass an `until` loop that exits when the status is no longer pending:
+
+```bash
+until gh pr checks <PR> --json name,state \
+  --jq '.[] | select(.name == "Greptile Review") | .state' \
+  | grep -vq PENDING; do sleep 30; done
+```
+
+Monitor streams each line back as a notification and fires when the loop exits — do not poll manually or chain `sleep` calls.
 
 ### 2. Fetch Greptile Comments
 
