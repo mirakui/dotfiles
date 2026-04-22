@@ -136,6 +136,10 @@
           {
             "type": "command",
             "command": "~/.claude/scripts/deny-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/assess-command.sh"
           }
         ]
       },
