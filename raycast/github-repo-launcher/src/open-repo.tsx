@@ -116,6 +116,7 @@ export default function OpenRepo() {
           key="__add_and_open__"
           id="__add_and_open__"
           title={`Add & Open ${parsed.owner}/${parsed.name}`}
+          keywords={[searchText, `${parsed.owner}/${parsed.name}`]}
           icon={Icon.PlusCircle}
           actions={
             <ActionPanel>
