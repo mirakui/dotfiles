@@ -54,6 +54,7 @@
       "Bash(mise where:*)",
       "Bash(mise backend:*)",
       "Bash(mise info:*)",
+      "Bash(nvim --headless:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm exec tsc:*)",
