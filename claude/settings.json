@@ -162,6 +162,16 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/session-title-prefix.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
