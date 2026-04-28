@@ -128,11 +128,13 @@ evaluate_via_claude() {
 }
 
 emit_system_message() {
-  jq -cn --arg msg "$1" '{
+  local msg="$1"
+  local decision="${2:-ask}"
+  jq -cn --arg msg "$msg" --arg decision "$decision" '{
     systemMessage: $msg,
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
-      permissionDecision: "ask",
+      permissionDecision: $decision,
       permissionDecisionReason: $msg
     }
   }'
@@ -190,6 +192,10 @@ esac
 message=$(printf '🛡️Bash 安全性評価\n  安全度: %s %s/5 (%s)\n  概要:   %s\n  副作用: %s\n  リスク: %s' \
   "$icon" "$safety" "$label" "$summary" "$side_effects" "$risks")
 
-emit_system_message "$message"
+if [[ "$safety" == "5" ]]; then
+  emit_system_message "$message" "allow"
+else
+  emit_system_message "$message"
+fi
 
 exit 0
