@@ -182,7 +182,8 @@
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "sorah-spec@sorah-marketplace": true
+    "sorah-spec@sorah-marketplace": true,
+    "ruby-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
@@ -199,5 +200,6 @@
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  }
+  },
+  "theme": "dark-daltonized"
 }
