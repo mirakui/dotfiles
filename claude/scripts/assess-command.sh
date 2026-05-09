@@ -18,6 +18,7 @@ LOG_FILE="${ASSESS_LOG_FILE:-${HOME}/.claude/logs/assess-command.jsonl}"
 input=$(cat)
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
+permission_mode=$(printf '%s' "$input" | jq -r '.permission_mode // empty')
 
 if [[ "$tool_name" != "Bash" || -z "$command" ]]; then
   exit 0
@@ -177,7 +178,8 @@ jq -cn \
   --arg side_effects "$side_effects" \
   --arg risks "$risks" \
   --argjson cache_hit "$cache_hit" \
-  '{timestamp: $ts, command: $cmd, safety: $safety, summary: $summary, sideEffects: $side_effects, risks: $risks, cache_hit: $cache_hit}' \
+  --arg permission_mode "$permission_mode" \
+  '{timestamp: $ts, command: $cmd, safety: $safety, summary: $summary, sideEffects: $side_effects, risks: $risks, cache_hit: $cache_hit, permissionMode: $permission_mode}' \
   >> "$LOG_FILE" 2>/dev/null || true
 
 case "$safety" in
@@ -192,7 +194,13 @@ esac
 message=$(printf '🛡️Bash 安全性評価\n  安全度: %s %s/5 (%s)\n  概要:   %s\n  副作用: %s\n  リスク: %s' \
   "$icon" "$safety" "$label" "$summary" "$side_effects" "$risks")
 
-if [[ "$safety" == "5" ]]; then
+if [[ "$permission_mode" == "auto" ]]; then
+  threshold=3
+else
+  threshold=5
+fi
+
+if (( safety >= threshold )); then
   emit_system_message "$message" "allow"
 else
   emit_system_message "$message"

@@ -47,11 +47,44 @@ JSON
 EOF
 chmod +x "${stub_bin}/claude"
 
+# Variant stub returning safety:3 for threshold tests
+stub_bin_safety3="${tmp}/stub-bin-safety3"
+mkdir -p "$stub_bin_safety3"
+cat > "${stub_bin_safety3}/claude" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+echo "called" >> "${call_log}"
+cat <<'JSON'
+{"structured_output":{"safety":3,"summary":"\u672a\u77e5\u30b3\u30de\u30f3\u30c9","sideEffects":"\u306a\u3057","risks":"\u306a\u3057"}}
+JSON
+EOF
+chmod +x "${stub_bin_safety3}/claude"
+
 run_hook() {
   local cmd="$1"
+  local mode="${2:-}"
   local input
-  input=$(jq -cn --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}')
+  if [[ -n "$mode" ]]; then
+    input=$(jq -cn --arg c "$cmd" --arg m "$mode" \
+      '{tool_name:"Bash", tool_input:{command:$c}, permission_mode:$m}')
+  else
+    input=$(jq -cn --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}')
+  fi
   PATH="${stub_bin}:$PATH" bash "$SCRIPT" <<< "$input"
+}
+
+run_hook_with_stub() {
+  local stub="$1"
+  local cmd="$2"
+  local mode="${3:-}"
+  local input
+  if [[ -n "$mode" ]]; then
+    input=$(jq -cn --arg c "$cmd" --arg m "$mode" \
+      '{tool_name:"Bash", tool_input:{command:$c}, permission_mode:$m}')
+  else
+    input=$(jq -cn --arg c "$cmd" '{tool_name:"Bash", tool_input:{command:$c}}')
+  fi
+  PATH="${stub}:$PATH" bash "$SCRIPT" <<< "$input"
 }
 
 extract_message() {
@@ -197,6 +230,39 @@ out=$(echo '{"tool_name":"Bash","tool_input":{"command":"novel_cmd_no_cache"}}' 
 msg=$(extract_message <<< "$out")
 if ! grep -q "スキップ" <<< "$msg"; then
   echo "FAIL [no-claude]: expected skip systemMessage, got: $out" >&2
+  exit 1
+fi
+
+# 10. permission_mode=auto + safety=3 -> allow (lowered threshold)
+reset_calls
+out=$(run_hook_with_stub "$stub_bin_safety3" "novel_auto_threshold_3" "auto")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+if [[ "$decision" != "allow" ]]; then
+  echo "FAIL [auto-3]: expected allow, got: $decision (full output: $out)" >&2
+  exit 1
+fi
+# Log should record permissionMode=auto
+logged_mode=$(jq -r '.permissionMode' < "$ASSESS_LOG_FILE")
+if [[ "$logged_mode" != "auto" ]]; then
+  echo "FAIL [auto-3/log]: expected permissionMode=auto, got: $logged_mode" >&2
+  exit 1
+fi
+
+# 11. permission_mode=default + safety=3 -> ask (default threshold stays at 5)
+reset_calls
+out=$(run_hook_with_stub "$stub_bin_safety3" "novel_default_threshold_3" "default")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+if [[ "$decision" != "ask" ]]; then
+  echo "FAIL [default-3]: expected ask, got: $decision (full output: $out)" >&2
+  exit 1
+fi
+
+# 12. permission_mode=auto + safety=2 -> ask (still below auto threshold of 3)
+reset_calls
+out=$(run_hook "novel_auto_threshold_2" "auto")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+if [[ "$decision" != "ask" ]]; then
+  echo "FAIL [auto-2]: expected ask, got: $decision (full output: $out)" >&2
   exit 1
 fi
 

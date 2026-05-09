@@ -497,4 +497,3 @@ export TF_PLUGIN_CACHE_DIR=$HOME/.cache/terraform-plugin
 # mise
 
 export MISE_GITHUB_TOKEN=$(gh auth token)
-
