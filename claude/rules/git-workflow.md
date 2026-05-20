@@ -22,6 +22,13 @@ When creating PRs:
 5. Push with `-u` flag if new branch
 6. Always create PRs as draft (use `--draft` flag with `gh pr create`)
 
+### Replying to Inline Comments
+
+When replying to inline review comments on a PR, append ` (claude)` to the end of the reply body so it is clear the response came from Claude rather than the user.
+
+Example:
+> Fixed in commit abc1234. (claude)
+
 ## Feature Implementation Workflow
 
 1. **Plan First**
