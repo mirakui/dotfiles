@@ -11,3 +11,4 @@ settings.local.json
 __pycache__/
 .mairu.json
 .worktree/
+.claude/worktrees
