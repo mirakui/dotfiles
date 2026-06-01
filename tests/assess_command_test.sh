@@ -60,6 +60,19 @@ JSON
 EOF
 chmod +x "${stub_bin_safety3}/claude"
 
+# Variant stub simulating Anthropic API 401 (expired OAuth token)
+stub_bin_401="${tmp}/stub-bin-401"
+mkdir -p "$stub_bin_401"
+cat > "${stub_bin_401}/claude" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+echo "called" >> "${call_log}"
+cat <<'JSON'
+{"type":"result","subtype":"success","is_error":true,"api_error_status":401,"result":"Failed to authenticate. API Error: 401 Invalid authentication credentials"}
+JSON
+EOF
+chmod +x "${stub_bin_401}/claude"
+
 run_hook() {
   local cmd="$1"
   local mode="${2:-}"
@@ -265,5 +278,58 @@ if [[ "$decision" != "ask" ]]; then
   echo "FAIL [auto-2]: expected ask, got: $decision (full output: $out)" >&2
   exit 1
 fi
+
+# 13. BYPASS file present at cwd/.cctmp/BYPASS_CHECK_HOOKS -> skip claude, emit allow with BYPASS marker
+reset_calls
+bypass_cwd="${tmp}/proj-with-bypass"
+mkdir -p "${bypass_cwd}/.cctmp"
+touch "${bypass_cwd}/.cctmp/BYPASS_CHECK_HOOKS"
+input=$(jq -cn --arg c "novel_bypassed_cmd_xyz" --arg w "$bypass_cwd" \
+  '{tool_name:"Bash", tool_input:{command:$c}, cwd:$w}')
+out=$(PATH="${stub_bin}:$PATH" bash "$SCRIPT" <<< "$input")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+msg=$(extract_message <<< "$out")
+if [[ "$decision" != "allow" ]]; then
+  echo "FAIL [bypass]: expected allow, got: $decision (full: $out)" >&2
+  exit 1
+fi
+if ! grep -q "BYPASS_CHECK_HOOKS" <<< "$msg"; then
+  echo "FAIL [bypass]: expected BYPASS_CHECK_HOOKS marker, got: $msg" >&2
+  exit 1
+fi
+assert_no_claude_call "bypass"
+
+# 13b. claude returns is_error:true with api_error_status -> emit detailed skip message
+reset_calls
+out=$(run_hook_with_stub "$stub_bin_401" "novel_401_test_cmd")
+msg=$(extract_message <<< "$out")
+if ! grep -q "401" <<< "$msg"; then
+  echo "FAIL [api-error]: expected 401 in systemMessage, got: $msg" >&2
+  exit 1
+fi
+if ! grep -q "Failed to authenticate" <<< "$msg"; then
+  echo "FAIL [api-error]: expected upstream error text in msg, got: $msg" >&2
+  exit 1
+fi
+# Error response must NOT be cached
+err_cache_key=$(printf '%s' "novel_401_test_cmd" | shasum -a 256 | awk '{print $1}')
+if [[ -f "${tmp}/cache/${err_cache_key}.json" ]]; then
+  echo "FAIL [api-error/cache]: error response should not be cached" >&2
+  exit 1
+fi
+
+# 14. cwd given but BYPASS file absent -> normal evaluation path runs
+reset_calls
+nobypass_cwd="${tmp}/proj-without-bypass"
+mkdir -p "$nobypass_cwd"
+input=$(jq -cn --arg c "novel_normal_path_cmd" --arg w "$nobypass_cwd" \
+  '{tool_name:"Bash", tool_input:{command:$c}, cwd:$w}')
+out=$(PATH="${stub_bin}:$PATH" bash "$SCRIPT" <<< "$input")
+msg=$(extract_message <<< "$out")
+if ! grep -q "Bash 安全性評価" <<< "$msg"; then
+  echo "FAIL [no-bypass-file]: expected normal assessment, got: $msg" >&2
+  exit 1
+fi
+assert_claude_called "no-bypass-file"
 
 echo "assess-command: all assertions passed"

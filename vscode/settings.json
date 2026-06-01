@@ -25,5 +25,10 @@
   "window.zoomLevel": 0,
   "terminal.integrated.env.osx": {
     "Q_NEW_SESSION": "1"
-  }
+  },
+  "remote.SSH.remotePlatform": {
+    "coder-vscode.coder-poc.mouri.build--naruta--naruta-2.main": "linux"
+  },
+  "remote.SSH.connectTimeout": 1800,
+  "security.workspace.trust.untrustedFiles": "open"
 }

@@ -21,6 +21,7 @@ input=$(cat)
 # Extract tool name and command from input
 tool_name=$(echo "$input" | jq -r '.tool_name // empty')
 command=$(echo "$input" | jq -r '.tool_input.command // empty')
+cwd=$(echo "$input" | jq -r '.cwd // empty')
 
 # Only process Bash tool calls
 if [[ "$tool_name" != "Bash" ]]; then
@@ -29,6 +30,14 @@ fi
 
 # If no command, allow
 if [[ -z "$command" ]]; then
+  exit 0
+fi
+
+# Bypass when a sentinel file exists under the session cwd
+if [[ -n "$cwd" && -f "${cwd}/.cctmp/BYPASS_CHECK_HOOKS" ]]; then
+  jq -cn '{
+    systemMessage: "[deny-check] .cctmp/BYPASS_CHECK_HOOKS によりスキップ"
+  }'
   exit 0
 fi
 

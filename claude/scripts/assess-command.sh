@@ -19,8 +19,23 @@ input=$(cat)
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // empty')
 command=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 permission_mode=$(printf '%s' "$input" | jq -r '.permission_mode // empty')
+cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
 
 if [[ "$tool_name" != "Bash" || -z "$command" ]]; then
+  exit 0
+fi
+
+# Bypass when a sentinel file exists under the session cwd
+if [[ -n "$cwd" && -f "${cwd}/.cctmp/BYPASS_CHECK_HOOKS" ]]; then
+  bypass_msg="[assess-command] .cctmp/BYPASS_CHECK_HOOKS によりスキップ"
+  jq -cn --arg msg "$bypass_msg" '{
+    systemMessage: $msg,
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "allow",
+      permissionDecisionReason: $msg
+    }
+  }'
   exit 0
 fi
 
@@ -117,15 +132,14 @@ JSON_SCHEMA='{"type":"object","properties":{"safety":{"type":"integer","minimum"
 
 evaluate_via_claude() {
   if ! command -v claude >/dev/null 2>&1; then
-    return 1
+    return 127
   fi
   claude -p \
     --output-format json \
     --system-prompt "$SYSTEM_PROMPT" \
     --model "$MODEL" \
     --json-schema "$JSON_SCHEMA" \
-    "Command: ${command}" 2>/dev/null \
-    | jq -c '.structured_output // empty' 2>/dev/null
+    "Command: ${command}" 2>/dev/null
 }
 
 emit_system_message() {
@@ -147,12 +161,35 @@ if cache_is_fresh "$cache_file"; then
   assessment=$(cat "$cache_file")
   cache_hit=true
 else
-  if assessment=$(evaluate_via_claude) && [[ -n "$assessment" ]]; then
-    printf '%s' "$assessment" > "$cache_file"
-  else
+  raw_response=""
+  rc=0
+  raw_response=$(evaluate_via_claude) || rc=$?
+  if (( rc != 0 )); then
+    if (( rc == 127 )); then
+      emit_system_message "[assess-command] 安全性評価をスキップしました (claude CLI が見つかりません)"
+    else
+      emit_system_message "[assess-command] 安全性評価をスキップしました (claude CLI 実行失敗: exit ${rc})"
+    fi
+    exit 0
+  fi
+  if [[ -z "$raw_response" ]]; then
     emit_system_message "[assess-command] 安全性評価をスキップしました (claude CLI 応答なし)"
     exit 0
   fi
+  is_error=$(printf '%s' "$raw_response" | jq -r '.is_error // false' 2>/dev/null)
+  if [[ "$is_error" == "true" ]]; then
+    api_status=$(printf '%s' "$raw_response" | jq -r '.api_error_status // empty' 2>/dev/null)
+    err_result=$(printf '%s' "$raw_response" | jq -r '.result // empty' 2>/dev/null)
+    detail="HTTP ${api_status:-?}: ${err_result:-不明なエラー}"
+    emit_system_message "[assess-command] 安全性評価をスキップしました (${detail})"
+    exit 0
+  fi
+  assessment=$(printf '%s' "$raw_response" | jq -c '.structured_output // empty' 2>/dev/null)
+  if [[ -z "$assessment" ]]; then
+    emit_system_message "[assess-command] 安全性評価をスキップしました (構造化出力なし)"
+    exit 0
+  fi
+  printf '%s' "$assessment" > "$cache_file"
 fi
 
 if [[ -z "$assessment" ]]; then

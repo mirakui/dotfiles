@@ -175,6 +175,9 @@
       }
     ]
   },
+  "worktree": {
+    "baseRef": "fresh"
+  },
   "statusLine": {
     "type": "command",
     "command": "~/.claude/scripts/statusline.sh"
@@ -183,7 +186,8 @@
     "document-skills@anthropic-agent-skills": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "sorah-spec@sorah-marketplace": true,
-    "ruby-lsp@claude-plugins-official": true
+    "ruby-lsp@claude-plugins-official": true,
+    "gopls-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
@@ -194,12 +198,14 @@
     }
   },
   "language": "日本語",
+  "effortLevel": "xhigh",
   "plansDirectory": ".cctmp/plans",
   "skipDangerousModePermissionPrompt": true,
+  "theme": "dark-daltonized",
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
-  },
-  "theme": "dark-daltonized"
+  }
 }

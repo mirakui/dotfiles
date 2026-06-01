@@ -452,10 +452,6 @@ case ":$PATH:" in
 esac
 # pnpm end
 
-### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
-export PATH="/Users/naruta/.rd/bin:$PATH"
-### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
-
 # Added by Antigravity
 export PATH="/Users/naruta/.antigravity/antigravity/bin:$PATH"
 
@@ -497,3 +493,11 @@ export TF_PLUGIN_CACHE_DIR=$HOME/.cache/terraform-plugin
 # mise
 
 export MISE_GITHUB_TOKEN=$(gh auth token)
+
+# rust
+
+export PATH="$HOME/.cargo/bin:$PATH"
+
+### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
+export PATH="/Users/naruta/.rd/bin:$PATH"
+### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
