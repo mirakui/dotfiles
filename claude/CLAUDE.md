@@ -14,3 +14,7 @@
 - Write git commit comments in the Conventional Commits format.
 - When committing to git, list all the prompts instructed up to that point in their original text within the commit comment.
 - Write git commit comments in English. If the prompt instructions were in Japanese, include the original text of the prompt in Japanese.
+
+# Knowledge Management
+
+- Check ~/.claude/wiki before starting; refer to any relevant knowledge.
