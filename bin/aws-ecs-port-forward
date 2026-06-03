@@ -131,14 +131,24 @@ elif [[ "$OPT_FIRST_TASK" == true ]]; then
   fi
 else
   echo "▶ Task を選択してください..."
-  TASK_ARN=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
-    | tr '\t' '\n' \
-    | fzf --prompt="Task> " --height=40% --border)
+  ALL_TASK_ARNS=$(aws ecs list-tasks --cluster "$CLUSTER" --query 'taskArns[]' --output text \
+    | tr '\t' '\n')
+  if [[ -z "$ALL_TASK_ARNS" ]]; then
+    echo "Error: タスクが見つかりません。" >&2
+    exit 1
+  fi
+  # 「taskDefinition family:revision <TAB> taskId <TAB> taskArn」を fzf に表示し、
+  # どのタスク定義のタスクか分かるようにする。選択後は隠し列の taskArn を取り出す。
+  SELECTED=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks $ALL_TASK_ARNS \
+    | jq -r '.tasks[]
+        | "\(.taskDefinitionArn | sub(".*/"; ""))\t\(.taskArn | sub(".*/"; ""))\t\(.taskArn)"' \
+    | fzf --prompt="Task> " --height=40% --border --delimiter='\t' --with-nth=1,2)
 
-  if [[ -z "$TASK_ARN" ]]; then
+  if [[ -z "$SELECTED" ]]; then
     echo "キャンセルしました。" >&2
     exit 0
   fi
+  TASK_ARN=$(printf '%s' "$SELECTED" | awk -F'\t' '{print $3}')
 fi
 TASK_ID=$(echo "$TASK_ARN" | sed 's|.*/||')
 echo "  Task: $TASK_ID"
