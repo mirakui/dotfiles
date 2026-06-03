@@ -93,6 +93,7 @@
       "Bash(yarn lint:*)",
       "Bash(yarn test:*)",
       "Read(~/.claude/contexts/*.md)",
+      "Read(~/.claude/wiki/)",
       "WebSearch",
       "WebFetch(domain:strandsagents.com)",
       "WebFetch(domain:aws.amazon.com)",
@@ -187,7 +188,8 @@
     "rust-analyzer-lsp@claude-plugins-official": true,
     "sorah-spec@sorah-marketplace": true,
     "ruby-lsp@claude-plugins-official": true,
-    "gopls-lsp@claude-plugins-official": true
+    "gopls-lsp@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
