@@ -11,7 +11,7 @@ karpathy 系 llm-wiki パターンに沿って、ページの作成/更新と `I
 
 `finish-session` skill の知見記録ステップからも、この skill が Skill ツール経由で呼ばれる。単体でも「wiki に記録して」等で起動できる。
 
-会話の文脈を持っているメインエージェントだけが知見を正確に言い当てられるため、サブエージェントには委譲せず、メインエージェントが直接実行する。
+会話の文脈を持っているメインエージェントだけが知見を正確に言い当てられるため、**知見の抽出はメインエージェントが直接行う**。一方、抽出が確定したあとの **機械的な書き込み（ページのファイル作成/更新・`INDEX.md` / `LOG.md` の追記）は会話文脈を必要としない** ので、ここだけを background の sub-agent に委譲し、メインを早く解放する。
 
 ## 前提: 記録先と確認の要否
 
@@ -31,25 +31,40 @@ karpathy 系 llm-wiki パターンに沿って、ページの作成/更新と `I
 - 調査の生ログや経緯ではなく、**定石・落とし穴・tips・チェックリスト** のような再利用できる形にまとめる。
 - 記録に値する知見が無い場合（雑談のみ、ごく短い作業など）は **無理にページを作らず終了する**。空ページを量産しないため。その旨を Step 5 で報告する。
 
-## Step 3: ページを作成 / 更新する
+## Step 3: 書き込み指示書を組み立てる（メインエージェント）
 
-各知見について:
+抽出した各知見について、**文脈を持たない sub-agent がそのまま機械的に書き込めるレベル** の指示を作る。要約や「適宜」で渡さず、ページ本文は全文を用意する（sub-agent に知見の創作・取捨選択をさせないため）。
 
-1. カテゴリを選ぶ（`troubleshooting` / `tools` / `workflow` / `infra` / `codebase`）。該当が無ければ wiki CLAUDE.md の方針に従って新カテゴリを足し、CLAUDE.md のカテゴリ表と `INDEX.md` の見出しも合わせて更新する。
-2. **新規ページ**: `~/.claude/wiki/_template.md` の構成をコピーして `<category>/<kebab-slug>.md` に作る。frontmatter（`title` / `category` / `tags` / `created` / `updated`、必要に応じて `related_repos` / `sources`）を埋める。日付は実行時の日付を使う（`date +%F` で取得）。
-3. **既存ページ更新**: 本文を追記・修正し、frontmatter の `updated` を今日の日付にする。
-4. wiki 内の関連ページへは `[[slug]]`（拡張子なしのファイル名）でリンクする。wiki 外（research/design/PR など）へは相対パス / フル URL でリンクする。
+各知見について次を決める:
 
-## Step 4: INDEX.md と LOG.md を更新する（必須・セットで）
+1. **カテゴリ**（`troubleshooting` / `tools` / `workflow` / `infra` / `codebase`）。該当が無ければ wiki CLAUDE.md の方針に従って新カテゴリを足す（その場合 CLAUDE.md のカテゴリ表と `INDEX.md` 見出しを更新する指示も指示書に含める）。
+2. **ファイルパス** `<category>/<kebab-slug>.md` と **new / update** の区別（Step 1 で読んだ `INDEX.md` で既存ページの有無を判断する）。
+3. **ページ本文**:
+   - new の場合: `~/.claude/wiki/_template.md` の構成に沿った frontmatter（`title` / `category` / `tags` / `created` / `updated`、必要に応じ `related_repos` / `sources`）＋本文の **全文**。
+   - update の場合: 既存ページのどこに何を追記/修正するか（追記本文の全文と、`updated` を今日に直す指示）。
+4. **リンク**: wiki 内の関連ページへは `[[slug]]`（拡張子なし）、wiki 外（research/design/PR など）へは相対パス / フル URL。
+5. **`INDEX.md` 追記行**: 該当カテゴリ見出しの下に足す `- [タイトル](category/slug.md) — 1 行サマリ`（末尾に `` `[tags]` `` を添えてよい）。update でサマリが変わるなら直す行も指定する。
+6. **`LOG.md` 追記行**: 末尾に足す `## [YYYY-MM-DD] <create|update> | <タイトル>` ＋ 何をしたか・出どころ（PR / session など）1〜2 行。
 
-ページの作成/更新と必ずセットで行う。片方だけ更新しない。
+> 日付（`YYYY-MM-DD`）は sub-agent 側で `date +%F` を実行して埋めさせる。
 
-- **`INDEX.md`**: 該当カテゴリ見出しの下に 1 行追加する。`- [タイトル](category/slug.md) — 1 行サマリ`（末尾に `` `[tags]` `` を添えてよい）。既存ページ更新でサマリが変わる場合は該当行も直す。
-- **`LOG.md`**: 末尾に追記する。`## [YYYY-MM-DD] <create|update> | <タイトル>` ＋ 何をしたか・出どころ（PR / session など）を 1〜2 行。**新しいものを下に追記する**。
+## Step 4: 書き込みを background の sub-agent に委譲する
+
+Step 3 の指示書を渡し、**Agent ツールを `run_in_background: true` で起動** してファイル書き込みだけを sub-agent に任せる。メインはここで解放され、完了通知を受け取ったら Step 5 で最終報告する。
+
+sub-agent へのプロンプトには次を必ず含める:
+
+- 「**指示書のとおりに `~/.claude/wiki` 配下へ機械的に書き込む。知見の取捨選択・内容の創作はしない**」と明記する。
+- 各ページの書き込み（new は新規作成、update は既存ファイルを Read してから Edit）。
+- `INDEX.md` への 1 行追加と `LOG.md` への追記を **必ずセットで** 行う（片方だけにしない）。これを忘れると orphan ページが残る。
+- 日付は `date +%F` で取得して frontmatter / `LOG.md` に埋める。
+- 完了後、**書き込んだ/更新したページの一覧（`<category/slug.md>` と new/update）を結果として返す**。
+
+記録に値する知見が無くスキップする場合は sub-agent を起動せず、Step 5 でその旨だけ報告する。
 
 ## Step 5: 結果を報告する
 
-記録したページを報告する:
+sub-agent を起動した直後は「書き込みを background で実行中」であることを伝える。sub-agent の **完了通知を受け取ったら**、その結果をもとに最終報告する:
 
 ```markdown
 ## wiki 更新
@@ -65,4 +80,4 @@ karpathy 系 llm-wiki パターンに沿って、ページの作成/更新と `I
 - 更新手順は `~/.claude/wiki/CLAUDE.md` を source of truth とし、本スキルの記述と食い違う場合は CLAUDE.md を優先する。
 - ページ作成/更新時は `INDEX.md` への 1 行追加と `LOG.md` への追記を **必ずセットで** 行う。これを忘れると wiki が orphan ページだらけになる。
 - 1 ページ 1 ノウハウを守る。1 ページが大きくなりすぎたら分割し `[[...]]` でつなぐ。
-- 会話文脈に依存するため、サブエージェントには委譲せずメインエージェントが直接行う。
+- **知見の抽出・取捨選択（Step 1〜3）は会話文脈に依存するため、必ずメインエージェントが直接行う。** background sub-agent に渡すのは、確定済みの指示書どおりに書き込む機械作業（Step 4）だけ。抽出まで sub-agent に丸投げしない。
