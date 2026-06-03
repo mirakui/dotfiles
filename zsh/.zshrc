@@ -261,9 +261,32 @@ function fzf-git-branches() {
 }
 _bindkey_widget "^[b" fzf-git-branches
 
+# fc -l の1行から先頭の履歴番号を取り出す (数値が無ければ空文字)。
+function _fzf_history_num_from_line() {
+  emulate -L zsh
+  setopt localoptions extendedglob
+  local line="${1-}"
+  print -r -- "${${line##[[:space:]]#}%%[^0-9]*}"
+}
+
 function fzf-history() {
-  BUFFER=$(history -n 1 | fzf --scheme=history --query="$LBUFFER")
-  CURSOR=$#BUFFER
+  emulate -L zsh
+  local selected num
+  # 履歴番号付きで一覧し、選んだ行の番号から「生の」履歴を復元する。
+  # history -n / fc -ln の出力は複数行コマンドの改行を \n にエスケープするため、
+  # それをそのまま BUFFER に入れるとリテラルの "\n" になってしまう。
+  # vi-fetch-history で番号からロードすれば実際の改行のまま復元できる。
+  # 番号列は --nth/--with-nth=2.. で検索・表示の対象から外す。
+  selected=$(fc -l 1 | fzf --scheme=history --query="$LBUFFER" --nth=2.. --with-nth=2..)
+  if [[ -n "$selected" ]]; then
+    num="$(_fzf_history_num_from_line "$selected")"
+    if [[ -n "$num" ]]; then
+      zle vi-fetch-history -n "$num"
+    else
+      BUFFER="$selected"
+    fi
+    CURSOR=$#BUFFER
+  fi
   zle redisplay
 }
 _bindkey_widget "^r" fzf-history
