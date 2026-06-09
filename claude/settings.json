@@ -47,13 +47,13 @@
       "Bash(kotlinc:*)",
       "Bash(ls-lint:*)",
       "Bash(ls:*)",
-      "Bash(mkdir:*)",
-      "Bash(mise ls:*)",
-      "Bash(mise ls-remote:*)",
-      "Bash(mise registry:*)",
-      "Bash(mise where:*)",
       "Bash(mise backend:*)",
       "Bash(mise info:*)",
+      "Bash(mise ls-remote:*)",
+      "Bash(mise ls:*)",
+      "Bash(mise registry:*)",
+      "Bash(mise where:*)",
+      "Bash(mkdir:*)",
       "Bash(nvim --headless:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm build:*)",
@@ -86,7 +86,6 @@
       "Bash(uv run ruff:*)",
       "Bash(uv sync:*)",
       "Bash(wc:*)",
-      "Bash(wc:*)",
       "Bash(which:*)",
       "Bash(yarn build:*)",
       "Bash(yarn format:*)",
@@ -94,16 +93,16 @@
       "Bash(yarn test:*)",
       "Read(~/.claude/contexts/*.md)",
       "Read(~/.claude/wiki/)",
-      "WebSearch",
-      "WebFetch(domain:strandsagents.com)",
-      "WebFetch(domain:aws.amazon.com)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:registry.terraform.io)",
+      "WebFetch(domain:aws.amazon.com)",
       "WebFetch(domain:docs.aws.amazon.com)",
       "WebFetch(domain:docs.databricks.com)",
+      "WebFetch(domain:github.com)",
       "WebFetch(domain:learn.microsoft.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:registry.terraform.io)",
+      "WebFetch(domain:strandsagents.com)",
+      "WebSearch",
       "mcp__claude_ai_Linear__get_issue",
       "mcp__claude_ai_Linear__list_issues"
     ],
@@ -189,13 +188,20 @@
     "sorah-spec@sorah-marketplace": true,
     "ruby-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
-    "superpowers@superpowers-marketplace": true
+    "superpowers@superpowers-marketplace": true,
+    "tsuji@tsuji-marketplace": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
       "source": {
         "source": "git",
         "url": "https://github.com/sorah/config.git"
+      }
+    },
+    "tsuji-marketplace": {
+      "source": {
+        "source": "directory",
+        "path": "/Users/naruta/src/tsuji"
       }
     }
   },
