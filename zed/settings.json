@@ -40,12 +40,13 @@
     "dock": "left",
     "commit_message_model": {
       "provider": "copilot_chat",
-      "model": "gpt-4o",
+      "model": "claude-haiku-4.5",
     },
     "favorite_models": [],
     "model_parameters": [],
   },
   "git_panel": {
+    "tree_view": true,
     "dock": "right",
   },
   "vim_mode": true,
