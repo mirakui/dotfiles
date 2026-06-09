@@ -524,3 +524,6 @@ export PATH="$HOME/.cargo/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/naruta/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
+
+# Added by Devin
+export PATH="/Users/naruta/.codeium/windsurf/bin:$PATH"
