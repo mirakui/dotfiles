@@ -1,3 +1,7 @@
+# Premise
+
+User name: Issei Naruta. GitHub ID: mirakui.
+
 # General Rules
 
 - Must use `askme` skill to ask me questions.

@@ -1,9 +1,9 @@
 ---
-name: update-skill
+name: refine-skill
 description: "あるスキルを使って作業した直後に、その回の学び (訂正・詰まり・カバーされていなかった edge case・無駄足) を元の SKILL.md へ還元して改善するメタスキル。save-as-skill で作ったスキルを育てる用途を主に想定する。スキルを使った作業のあとは、改善余地に気づいた時点で必ずこの skill を使うこと。Use when the user says: スキル改善して, このスキルを更新して, 今の学びをスキルに反映, スキルをアップデート, さっきのスキルを直して, スキルを育てて, update skill, improve the skill, refine this skill, fold this back into the skill, このスキルもっと良くして, 今回の作業をスキルに還元"
 ---
 
-# Update Skill
+# Refine Skill
 
 このスキルは「あるスキルを実際に使って作業した直後に、その回で得た学びを元のスキルへ還元する」ための **メタスキル** です。
 `save-as-skill` が "セッション → 新規スキル" を作るのに対し、これは "セッション → 既存スキル改善" の対になります。
