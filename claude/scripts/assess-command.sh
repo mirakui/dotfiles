@@ -123,6 +123,8 @@ SYSTEM_PROMPT=$'You evaluate the safety of a Bash command that a developer is ab
 Rules:\n\
 - Output MUST be valid JSON matching the provided schema.\n\
 - safety: 1 (destructive, irreversible, or high blast radius) .. 5 (read-only, no external effects).\n\
+- Routine local version-control bookkeeping is safe: treat `git add` and `git commit` as safety 4 regardless of flags, multi-line commit messages, or shell metacharacters (&& || ;) inside the commit message.\n\
+- A non-force `git push` (without --force / -f / --force-with-lease) is safety 3. A force push, or history-rewriting / destructive git commands (reset --hard, rebase, checkout, clean, filter-branch), is NOT covered by these overrides and should be rated by its actual blast radius (typically 1-2).\n\
 - summary: one sentence in Japanese describing what the command does.\n\
 - sideEffects: one sentence in Japanese listing filesystem/network/process changes. Write "\xe3\x81\xaa\xe3\x81\x97" (none) if read-only.\n\
 - risks: one sentence in Japanese describing what could go wrong (data loss, exfiltration, resource exhaustion, etc.). Write "\xe3\x81\xaa\xe3\x81\x97" if essentially safe.\n\
