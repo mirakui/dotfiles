@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# nvim-lazy-sync - Update Neovim lazy.nvim plugins and commit lazy-lock.json
+#                  changes to this dotfiles repo (no push).
+#
+# Flow:
+#   1. Run `Lazy! sync` headlessly to update plugins.
+#   2. Check whether nvim/lazy-lock.json changed.
+#   3. If it changed, stage and commit it with a conventional-commits message.
+#      If nothing changed, exit 0 without committing.
+#
+# push is intentionally NOT performed; that stays a manual step.
+#
+# The dotfiles repo root is resolved from this script's own location, so it
+# works regardless of the caller's current directory.
+#
+# Dependencies: nvim, git
+
+set -uo pipefail
+
+log() { printf '%s\n' "$*" >&2; }
+
+# --- resolve dotfiles repo root ---------------------------------------------
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+dotfiles_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"
+if [[ -z "${dotfiles_root:-}" ]]; then
+  log "error: could not resolve dotfiles repo root from $script_dir"
+  exit 1
+fi
+
+lock_file="nvim/lazy-lock.json"
+
+# --- 1. sync plugins --------------------------------------------------------
+log "==> Running 'Lazy! sync' ..."
+if ! nvim --headless "+Lazy! sync" +qa; then
+  log "error: 'nvim --headless +Lazy! sync' failed"
+  exit 1
+fi
+
+# --- 2. check for changes ---------------------------------------------------
+if git -C "$dotfiles_root" diff --quiet -- "$lock_file"; then
+  log "==> No changes in $lock_file; nothing to commit."
+  exit 0
+fi
+
+# --- 3. commit --------------------------------------------------------------
+log "==> Changes detected in $lock_file; committing ..."
+git -C "$dotfiles_root" add -- "$lock_file"
+git -C "$dotfiles_root" commit -m "chore: sync nvim lazy plugins"
+log "==> Committed $lock_file (push skipped)."

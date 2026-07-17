@@ -3,25 +3,17 @@ name: nvim-lazy-sync
 description: Neovim の lazy.nvim プラグインを定期的に sync し、lazy-lock.json の差分があれば dotfiles にコミット
 ---
 
-dotfiles の Neovim プラグインを最新化します。次の手順を順に実行してください。
+dotfiles の Neovim プラグインを最新化します。次のスクリプトを実行してください。
 
-1. lazy.nvim の sync を headless 実行:
+```bash
+/Users/naruta/src/dotfiles/bin/nvim-lazy-sync
+```
 
-   ```bash
-   nvim --headless "+Lazy! sync" +qa
-   ```
+このスクリプト (`dotfiles/bin/nvim-lazy-sync`) は以下を自動で行います。
 
-2. lazy-lock.json に差分があるか確認:
+1. `nvim --headless "+Lazy! sync" +qa` でプラグインを sync
+2. `nvim/lazy-lock.json` に差分があるか確認
+3. 差分があれば `chore: sync nvim lazy plugins` でコミット（push はしない）
+4. 差分がなければコミットせず終了 (exit 0)
 
-   ```bash
-   git -C /Users/naruta/src/dotfiles diff --quiet -- nvim/lazy-lock.json
-   ```
-
-3. 終了コードが非 0 (差分あり) の場合のみ、dotfiles にコミット (push はしない):
-
-   ```bash
-   git -C /Users/naruta/src/dotfiles add nvim/lazy-lock.json
-   git -C /Users/naruta/src/dotfiles commit -m "chore: sync nvim lazy plugins"
-   ```
-
-4. 結果 (更新の有無、エラーがあればその概要) を簡潔に報告してください。
+スクリプトの終了コードと標準エラー出力をもとに、結果（更新の有無、エラーがあればその概要）を簡潔に報告してください。
