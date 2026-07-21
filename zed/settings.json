@@ -24,6 +24,10 @@
     },
   },
   "edit_predictions": {
+    "codestral": {
+      "model": "codestral-latest"
+    },
+    "allow_data_collection": "no",
     "provider": "copilot",
   },
   "cli_default_open_behavior": "existing_window",
@@ -38,10 +42,6 @@
   },
   "agent": {
     "dock": "left",
-    "commit_message_model": {
-      "provider": "copilot_chat",
-      "model": "claude-haiku-4.5",
-    },
     "favorite_models": [],
     "model_parameters": [],
   },

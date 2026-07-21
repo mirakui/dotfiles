@@ -110,8 +110,8 @@
       "Bash(terraform apply:*)",
       "Bash(npm:*)",
       "Bash(yarn npm:*)",
-      "Bash(pip:*)",
-      "Bash(uv pip:*)",
+      "Bash(__pip:*)",
+      "Bash(__uv pip:*)",
       "Bash(sudo:*)",
       "Bash(rm:*)",
       "Bash(rmdir:*)",
@@ -129,6 +129,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "sonnet",
   "hooks": {
     "PreToolUse": [
       {
@@ -189,7 +190,8 @@
     "ruby-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
     "superpowers@superpowers-marketplace": true,
-    "tsuji@tsuji-marketplace": true
+    "tsuji@tsuji-marketplace": true,
+    "datadog@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "sorah-marketplace": {
@@ -208,8 +210,10 @@
   "language": "日本語",
   "effortLevel": "xhigh",
   "plansDirectory": ".cctmp/plans",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "dark-daltonized",
+  "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,

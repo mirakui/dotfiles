@@ -276,8 +276,12 @@ function fzf-history() {
   # history -n / fc -ln の出力は複数行コマンドの改行を \n にエスケープするため、
   # それをそのまま BUFFER に入れるとリテラルの "\n" になってしまう。
   # vi-fetch-history で番号からロードすれば実際の改行のまま復元できる。
-  # 番号列は --nth/--with-nth=2.. で検索・表示の対象から外す。
-  selected=$(fc -l 1 | fzf --scheme=history --query="$LBUFFER" --nth=2.. --with-nth=2..)
+  # 番号列は --with-nth=2.. で検索・表示の対象から外す。
+  # 注意: --nth は --with-nth で変換した後の文字列に適用されるため、
+  # --with-nth=2.. と --nth=2.. を併用すると先頭コマンド語が二重に除外され
+  # ("mairu login ivry" の "mairu" が検索対象から外れる) ヒットしなくなる。
+  # --with-nth=2.. だけで番号は検索・表示から外れる (選択時の出力には番号が残る)。
+  selected=$(fc -l 1 | fzf --scheme=history --query="$LBUFFER" --with-nth=2..)
   if [[ -n "$selected" ]]; then
     num="$(_fzf_history_num_from_line "$selected")"
     if [[ -n "$num" ]]; then
@@ -521,9 +525,17 @@ export MISE_GITHUB_TOKEN=$(gh auth token)
 
 export PATH="$HOME/.cargo/bin:$PATH"
 
+# mairu override
+
+alias mairu-login="$HOME/src/mirakui-mairu/target/release/mairu login ivry"
+
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/Users/naruta/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
 
 # Added by Devin
 export PATH="/Users/naruta/.codeium/windsurf/bin:$PATH"
+
+# Coder
+export CODER_SSH_FORWARD_GPG=true
+export CODER_SSH_FORWARD_AGENT=true
