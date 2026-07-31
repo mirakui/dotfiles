@@ -539,3 +539,13 @@ export PATH="/Users/naruta/.codeium/windsurf/bin:$PATH"
 # Coder
 export CODER_SSH_FORWARD_GPG=true
 export CODER_SSH_FORWARD_AGENT=true
+
+# ============ BEGIN coder COMPLETION ============
+_coder_completions() {
+	local -a args completions
+	args=("${words[@]:1:$#words}")
+	completions=(${(f)"$(COMPLETION_MODE=1 "coder" "${args[@]}")"})
+	compadd -a completions
+}
+compdef _coder_completions coder
+# ============ END coder COMPLETION ==============
