@@ -1,2 +1,37 @@
+[settings]
+dotfiles.default_mode = "symlink"
+
 [dotfiles]
-"~/.config/herdr/config.toml" = "herdr/config.toml"
+# claude
+"~/.claude/*" = { source = "claude/*" }
+
+# git
+"~/.gitconfig" = "git/.gitconfig"
+"~/.gitignore_global" = "git/.gitignore_global"
+
+# ghostty
+"~/.config/ghostty" = "ghostty"
+
+# herdr
+"~/.config/herdr" = "herdr"
+
+# tmux
+"~/.tmux.conf" = "tmux/.tmux.conf"
+
+# vim / nvim
+"~/.vim" = "vim/.vim"
+"~/.vimrc" = "vim/.vimrc"
+"~/.config/nvim" = "nvim"
+
+# wezterm
+"~/.config/wezterm" = "wezterm"
+
+# zed
+"~/.config/zed" = "zed"
+
+# zsh
+"~/.zshrc" = "zsh/.zshrc"
+"~/.config/starship.toml" = "zsh/starship.toml"
+
+# zellij
+"~/.config/zellij" = "zellij"
