@@ -75,6 +75,12 @@ sub-agent を起動した直後は「書き込みを background で実行中」�
 
 記録すべき知見が無くスキップした場合は、「記録に値する知見が無いと判断したためスキップした」とだけ簡潔に伝える。
 
+最終報告の際、前回 dreaming 以降の新規ページ数を数え、**15 件以上なら dreaming (`/dream-wiki` skill) の実行を推奨する 1 行を報告に添える**:
+
+```bash
+awk '/^## \[[0-9-]+\] dream \|/{n=0; next} /^## \[[0-9-]+\] create \|/{n++} END{print n+0}' ~/.claude/wiki/LOG.md
+```
+
 ## 注意
 
 - 更新手順は `~/.claude/wiki/CLAUDE.md` を source of truth とし、本スキルの記述と食い違う場合は CLAUDE.md を優先する。

@@ -25,18 +25,23 @@ Repeat the following loop until Greptile has no new comments:
 First check the current status:
 
 ```bash
-gh pr checks <PR>
+gh pr checks <PR> || true
 ```
+
+`gh pr checks` exits non-zero whenever any check is still pending or failing, so append `|| true` when you only want to read its output.
 
 If "Greptile Review" is already `pass` or `fail`, proceed to step 2.
 
-If it is `pending`, use the **Monitor tool** to wait until it completes. Pass an `until` loop that exits when the status is no longer pending:
+Otherwise use the **Monitor tool** to wait. Pass an `until` loop that exits once the check both *exists* and is no longer pending:
 
 ```bash
-until gh pr checks <PR> --json name,state \
-  --jq '.[] | select(.name == "Greptile Review") | .state' \
-  | grep -vq PENDING; do sleep 30; done
+until [ "$(gh pr checks <PR> --json name,bucket \
+  --jq '[.[] | select(.name == "Greptile Review" and .bucket != "pending")] | length')" = "1" ]; do
+  sleep 20
+done
 ```
+
+Test `bucket`, not `state`: `state` moves `PENDING` → `IN_PROGRESS` → `SUCCESS`, so a "not PENDING" test succeeds while the review is still running and you read a half-finished review.
 
 Monitor streams each line back as a notification and fires when the loop exits — do not poll manually or chain `sleep` calls.
 
@@ -44,12 +49,14 @@ Monitor streams each line back as a notification and fires when the loop exits �
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{PR}/comments \
-  --jq '[.[] | select(.user.login == "greptile-apps[bot]")]'
+  --jq '[.[] | select(.user.login == "greptile-apps[bot]" and .in_reply_to_id == null)]'
 ```
 
 For each comment, extract: `id`, `path`, `line`, `body`, `created_at`.
 
-Filter to only **new** comments — those created after the last fix commit's push timestamp. On the first iteration, all comments are new.
+`in_reply_to_id == null` keeps only thread-opening comments, since replies inside a thread are discussion rather than new findings.
+
+Filter to only **new** comments by keeping the set of comment `id`s you have already replied to and treating anything else as new. Do not compare `created_at` against the last push: findings you already fixed stay in the list forever, so timestamps alone cannot tell handled from unhandled. On the first iteration, all comments are new.
 
 ### 3. Check for New Comments
 
@@ -105,6 +112,8 @@ For skipped P2 comments, reply explaining why it was skipped.
 ```bash
 gh pr comment <PR> --body "@greptileai review"
 ```
+
+Greptile takes up to a minute to register the re-requested run. Before looping back, confirm the check has actually returned to `pending` — until it does, the *previous* run's `pass` is still listed and step 1's wait exits immediately on it, making you re-read findings you just fixed.
 
 ### 9. Loop
 
