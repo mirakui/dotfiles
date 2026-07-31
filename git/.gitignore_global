@@ -12,3 +12,5 @@ __pycache__/
 .mairu.json
 .worktree/
 .claude/worktrees
+
+**/.claude/.cc-writes/
