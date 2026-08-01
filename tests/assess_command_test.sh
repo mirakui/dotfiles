@@ -332,4 +332,31 @@ if ! grep -q "Bash 安全性評価" <<< "$msg"; then
 fi
 assert_claude_called "no-bypass-file"
 
+# 15. BYPASS_CHECK_HOOKS env var set -> skip claude, emit allow with BYPASS marker
+reset_calls
+input=$(jq -cn --arg c "novel_env_bypassed_cmd_xyz" --arg w "$nobypass_cwd" \
+  '{tool_name:"Bash", tool_input:{command:$c}, cwd:$w}')
+out=$(BYPASS_CHECK_HOOKS=1 PATH="${stub_bin}:$PATH" bash "$SCRIPT" <<< "$input")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+msg=$(extract_message <<< "$out")
+if [[ "$decision" != "allow" ]]; then
+  echo "FAIL [env-bypass]: expected allow, got: $decision (full: $out)" >&2
+  exit 1
+fi
+if ! grep -q "BYPASS_CHECK_HOOKS" <<< "$msg"; then
+  echo "FAIL [env-bypass]: expected BYPASS_CHECK_HOOKS marker, got: $msg" >&2
+  exit 1
+fi
+assert_no_claude_call "env-bypass"
+
+# 16. BYPASS_CHECK_HOOKS set to an empty value still counts as set -> bypass
+reset_calls
+out=$(BYPASS_CHECK_HOOKS='' PATH="${stub_bin}:$PATH" bash "$SCRIPT" <<< "$input")
+decision=$(jq -r '.hookSpecificOutput.permissionDecision' <<< "$out")
+if [[ "$decision" != "allow" ]]; then
+  echo "FAIL [env-bypass-empty]: expected allow, got: $decision (full: $out)" >&2
+  exit 1
+fi
+assert_no_claude_call "env-bypass-empty"
+
 echo "assess-command: all assertions passed"

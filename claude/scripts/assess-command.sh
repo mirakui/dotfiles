@@ -25,9 +25,16 @@ if [[ "$tool_name" != "Bash" || -z "$command" ]]; then
   exit 0
 fi
 
-# Bypass when a sentinel file exists under the session cwd
-if [[ -n "$cwd" && -f "${cwd}/.cctmp/BYPASS_CHECK_HOOKS" ]]; then
-  bypass_msg="[assess-command] .cctmp/BYPASS_CHECK_HOOKS によりスキップ"
+# Bypass when BYPASS_CHECK_HOOKS is set, or a sentinel file exists under the session cwd
+bypass_reason=""
+if [[ -n "${BYPASS_CHECK_HOOKS+x}" ]]; then
+  bypass_reason="環境変数 BYPASS_CHECK_HOOKS"
+elif [[ -n "$cwd" && -f "${cwd}/.cctmp/BYPASS_CHECK_HOOKS" ]]; then
+  bypass_reason=".cctmp/BYPASS_CHECK_HOOKS"
+fi
+
+if [[ -n "$bypass_reason" ]]; then
+  bypass_msg="[assess-command] ${bypass_reason} によりスキップ"
   jq -cn --arg msg "$bypass_msg" '{
     systemMessage: $msg,
     hookSpecificOutput: {
