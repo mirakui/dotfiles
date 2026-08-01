@@ -13,7 +13,7 @@ dotfiles.default_mode = "symlink"
 "~/.config/ghostty" = "ghostty"
 
 # herdr
-"~/.config/herdr" = "herdr"
+"~/.config/herdr/config.toml" = "herdr/config.toml"
 
 # tmux
 "~/.tmux.conf" = "tmux/.tmux.conf"
