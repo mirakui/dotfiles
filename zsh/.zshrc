@@ -85,7 +85,7 @@ alias claude-review='claude --append-system-prompt "read @~/.claude/contexts/rev
 alias claude-research='claude --append-system-prompt "read @~/.claude/contexts/research.md" --allow-dangerously-skip-permissions --enable-auto-mode'
 alias claude-gal='claude --append-system-prompt "read @~/.claude/contexts/gal.md"'
 alias claude-coach='claude --append-system-prompt "read @~/.claude/contexts/coach.md" --enable-auto-mode'
-alias claude-sandbox="claude --settings '~/.claude/contexts/enforce-sandbox.json' --dangerously-skip-permissions"
+alias claude-sandbox="claude --settings ~/.claude/contexts/enforce-sandbox.json --dangerously-skip-permissions"
 function gf() { git submodule foreach git --no-pager $*; git --no-pager $* }
 #alias st='gf status -sbu'
 alias st='gf status'
