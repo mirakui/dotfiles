@@ -5,6 +5,7 @@
 #
 # Output (stderr): safety 1-5, summary, side effects, risks.
 # Always exits 0 so the normal permission flow is never blocked.
+# Skipped when sandbox mode is on, except for dangerouslyDisableSandbox commands.
 
 set -euo pipefail
 
@@ -36,6 +37,39 @@ if [[ -n "$cwd" && -f "${cwd}/.cctmp/BYPASS_CHECK_HOOKS" ]]; then
       permissionDecisionReason: $msg
     }
   }'
+  exit 0
+fi
+
+# Resolve sandbox.enabled the way Claude Code merges settings: the
+# highest-priority file that defines the key wins. `/sandbox` writes to the
+# project's settings.local.json, so that file is what a runtime toggle changes.
+sandbox_enabled() {
+  if [[ "${CLAUDE_CODE_FORCE_SANDBOX:-}" == "1" ]]; then
+    return 0
+  fi
+
+  local project_dir="${CLAUDE_PROJECT_DIR:-$cwd}"
+  local file value
+  for file in \
+    "/Library/Application Support/ClaudeCode/managed-settings.json" \
+    "/etc/claude-code/managed-settings.json" \
+    "${project_dir}/.claude/settings.local.json" \
+    "${project_dir}/.claude/settings.json" \
+    "$SETTINGS_FILE"; do
+    [[ -f "$file" ]] || continue
+    value=$(jq -r 'if (.sandbox // {} | has("enabled")) then (.sandbox.enabled | tostring) else empty end' "$file" 2>/dev/null || true)
+    [[ -z "$value" ]] && continue
+    [[ "$value" == "true" ]]
+    return
+  done
+  return 1
+}
+
+# Skip in sandbox mode: sandboxed commands are already isolated, so the
+# assessment only adds latency. Commands opting out via dangerouslyDisableSandbox
+# escape the sandbox and are still assessed.
+disable_sandbox=$(printf '%s' "$input" | jq -r '.tool_input.dangerouslyDisableSandbox // false')
+if [[ "$disable_sandbox" != "true" ]] && sandbox_enabled; then
   exit 0
 fi
 
