@@ -122,9 +122,7 @@
     "ask": [
       "Bash(git reset:*)",
       "Bash(git checkout:*)",
-      "Bash(git rm:*)",
-      "Bash(curl:*)",
-      "Bash(wget:*)"
+      "Bash(git rm:*)"
     ],
     "defaultMode": "auto"
   },
