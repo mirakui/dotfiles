@@ -126,7 +126,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -183,29 +183,13 @@
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
-    "sorah-spec@sorah-marketplace": true,
     "ruby-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
-    "superpowers@superpowers-marketplace": true,
-    "tsuji@tsuji-marketplace": true,
     "datadog@claude-plugins-official": true
   },
-  "extraKnownMarketplaces": {
-    "sorah-marketplace": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/sorah/config.git"
-      }
-    },
-    "tsuji-marketplace": {
-      "source": {
-        "source": "directory",
-        "path": "/Users/naruta/src/tsuji"
-      }
-    }
-  },
+  "extraKnownMarketplaces": {},
   "language": "日本語",
-  "effortLevel": "xhigh",
+  "effortLevel": "medium",
   "plansDirectory": ".cctmp/plans",
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
@@ -213,6 +197,45 @@
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Bash(mairu list-sessions)",
+      "Bash(uuidgen)",
+      "Bash(gh repo view:*)"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(mise run terraform:azure:apply)",
+      "Bash(mairu exec:* terraform apply:*)"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: ivry-inc (GitHub org for this repo; internal domain @ivry.jp seen in project skill docs)",
+      "**Cloud provider(s)**: AWS (S3 Terraform backend, credentials brokered via `mairu exec 905418355005/AdministratorAccess --server ivry`) and Azure / Azure AD (azuread Terraform provider) for this repo",
+      "**Repository visibility**: private — ivry-inc/datahub-accounts (confirmed via gh API)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: `mairu` SSO session broker for AWS credentials (role `905418355005/AdministratorAccess`, server `ivry`); interactive `mairu login ivry` must be run by the user; `az` login session supplies Azure credentials",
+      "**Default / protected branches**: default branch `main`; repository ruleset `eng` is active (no classic protected-branch entries — rulesets govern instead)",
+      "**CI/CD deploy targets**: None configured — this repo's convention is direct commits to `main` with no PR/CI; `terraform apply` for terraform/azure is run manually outside git",
+      "**Network posture**: None configured",
+      "**Source control**: The trusted repo and its remote(s) only — git@github.com:ivry-inc/datahub-accounts.git (`origin`), private",
+      "**Trusted internal domains**: ivry.jp and subdomains referenced by this repo (e.g. datahub.app.ivry.jp); linear.app/ivry for DATAHUB issue tracking",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: Data Hub (datahub.app.ivry.jp) Azure AD enterprise application and its per-organization app roles; Linear (linear.app/ivry, DATAHUB-XXXX access-request issues); AWS S3 Terraform state backend for terraform/azure and terraform/azure-stg",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: `organizations/<org_id>/users.txt` and `organizations/<org_id>/guest_users.txt` hold real member and external-guest email addresses (personal data); `organizations/<org_id>/README.md` holds client organization names; `terraform/azure*/.terraform/terraform.tfstate` and `terraform/azure*/backend.tf` may hold state/backend details; `bin/manage_credential` and `bin/oneshot/backfill_google_credentials` touch credentials. Preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: the Azure AD tenant and Data Hub enterprise application managed from `terraform/azure` (production scope; `terraform/azure-stg` is the staging counterpart), plus any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: `terraform/azure` (production Azure AD app roles, invitations and role assignments for Data Hub) — apply is manual and out-of-band; `terraform/azure-stg` is staging",
+      "**Protected IaC scopes**: Azure AD identity resources in this repo (azuread_application_app_role, azuread_app_role_assignment, azuread_invitation, azuread_service_principal, enterprise_app.tf, datahub_default_members.tf), Terraform S3 backend configuration and state files; plus IAM, RBAC, networking, quota, and node-pool resources and anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: Terraform/Azure AD access administration for Data Hub in this repo — processing Linear DATAHUB access requests, editing `organizations/*/users.txt` and `guest_users.txt`, generating `terraform/azure/org_<id>.tf`, and validating with targeted `terraform plan`",
+      "**Trusted repo**: /Users/naruta/work/datahub-accounts and its remote git@github.com:ivry-inc/datahub-accounts.git (private). Visibility scopes confidential material only: secrets and sensitive data (personal & entrusted) are never cleared into any repo by its visibility",
+      "**Org-specific CLIs**: `mairu` (AWS SSO credential broker; 24x in this project, 106x in shell history), `mise` (task runner: `terraform:azure:plan` / `terraform:azure:apply`), `terraform`, `databricks`, `uuidgen`, `xxd`, `gh`, `coder`, `mtf`",
+      "**Routine under this repo**: read-only `mairu list-sessions` and `mairu exec ... terraform plan -lock=false` (including `-target=` and `-chdir=terraform/azure`) are routine here; `terraform apply` is not — it is manual, out-of-band and must stay confirmation-gated"
+    ]
+  },
   "voiceEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754129924816
