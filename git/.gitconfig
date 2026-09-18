@@ -83,3 +83,5 @@
 	helper = !/opt/homebrew/bin/gh auth git-credential
 [tag]
 	gpgSign = true
+[credential "https://git.ivry.dev"]
+	provider = generic
