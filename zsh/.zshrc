@@ -550,3 +550,6 @@ _coder_completions() {
 }
 compdef _coder_completions coder
 # ============ END coder COMPLETION ==============
+
+# opencode
+export PATH=/Users/naruta/.opencode/bin:$PATH
