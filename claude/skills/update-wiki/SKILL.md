@@ -29,6 +29,7 @@ karpathy 系 llm-wiki パターンに沿って、ページの作成/更新と `I
 
 - 判断基準は「**次の作業で、すぐ引っ張り出したいか?**」。Yes のものだけ記録する。
 - 調査の生ログや経緯ではなく、**定石・落とし穴・tips・チェックリスト** のような再利用できる形にまとめる。
+- **採用済みの事実と、検討中の設計・提案を区別する。** 未マージの PR や作業中の plan で決めた設計は、マージ・採用されるまで事実ではない。その場合は TL;DR に「PR #N 時点の設計。未マージ」のように書く (未マージ PR の計画を事実として書いたページが、後で close されて誤った推奨として別ページに広がった事故があったため)。
 - 記録に値する知見が無い場合（雑談のみ、ごく短い作業など）は **無理にページを作らず終了する**。空ページを量産しないため。その旨を Step 5 で報告する。
 
 ## Step 3: 書き込み指示書を組み立てる（メインエージェント）
@@ -40,10 +41,10 @@ karpathy 系 llm-wiki パターンに沿って、ページの作成/更新と `I
 1. **カテゴリ**（`troubleshooting` / `tools` / `workflow` / `infra` / `codebase`）。該当が無ければ wiki CLAUDE.md の方針に従って新カテゴリを足す（その場合 CLAUDE.md のカテゴリ表と `INDEX.md` 見出しを更新する指示も指示書に含める）。
 2. **ファイルパス** `<category>/<kebab-slug>.md` と **new / update** の区別（Step 1 で読んだ `INDEX.md` で既存ページの有無を判断する）。
 3. **ページ本文**:
-   - new の場合: `~/.claude/wiki/_template.md` の構成に沿った frontmatter（`title` / `category` / `tags` / `created` / `updated`、必要に応じ `related_repos` / `sources`）＋本文の **全文**。
+   - new の場合: `~/.claude/wiki/_template.md` の構成に沿った frontmatter（`title` / `category` / `tags` / `created` / `updated`、必要に応じ `related_repos` / `sources`）＋本文の **全文**。PR を `sources` に入れるときは URL をそのまま書く (dreaming の Lint が PR の状態を調べるため)。
    - update の場合: 既存ページのどこに何を追記/修正するか（追記本文の全文と、`updated` を今日に直す指示）。
 4. **リンク**: wiki 内の関連ページへは `[[slug]]`（拡張子なし）、wiki 外（research/design/PR など）へは相対パス / フル URL。
-5. **`INDEX.md` 追記行**: 該当カテゴリ見出しの下に足す `- [タイトル](category/slug.md) — 1 行サマリ`（末尾に `` `[tags]` `` を添えてよい）。update でサマリが変わるなら直す行も指定する。
+5. **`INDEX.md` 追記行**: 該当カテゴリ見出しの下に足す `- [タイトル](category/slug.md) — サマリ` + 末尾にタグ `` `[tag1][tag2]` ``。**サマリは 1 文・80 字以内、タグは 5 個まで** (wiki CLAUDE.md の「INDEX の行」)。詳細は本文に任せ、INDEX には核だけ書く。update でサマリが変わるなら直す行も指定する。
 6. **`LOG.md` 追記行**: 末尾に足す `## [YYYY-MM-DD] <create|update> | <タイトル>` ＋ 何をしたか・出どころ（PR / session など）1〜2 行。
 
 > 日付（`YYYY-MM-DD`）は sub-agent 側で `date +%F` を実行して埋めさせる。

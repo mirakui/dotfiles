@@ -16,7 +16,13 @@ karpathy 系 llm-wiki の Lint を拡張した **dreaming** — 睡眠中の記�
 ## 安全ルール (全フェーズ共通)
 
 - **ページの削除・カテゴリの廃止はしない**。無効化は frontmatter `status: deprecated` + INDEX 行への `(deprecated)` 明記まで
-- 1 回の dreaming で内容を変更するページは **15 ページまで**、蒸留による新規ページは **1 ページまで**。溢れた候補は Step 6 の LOG エントリに「次回持ち越し」として書き残す
+- 1 回の dreaming の予算:
+  - **本文を変えるページは 15 ページまで** (マージ・分割・陳腐化による記述更新・deprecated 化など)
+  - **リンクの追記だけのページは別枠で 30 ページまで** (「関連」への `[[link]]` 追加や、蒸留ページへの逆リンク。本文の主張は変えないもの)
+  - **蒸留による新規ページは 1 ページまで**
+  - `reviewed` の付与だけ・INDEX.md の行修正は予算に数えない
+  - 溢れた候補は Step 5 の LOG エントリに「次回持ち越し」として書き残す
+- リンクを追記しただけのページでは `updated` を上げない (ローテーションが歪むため。`updated` は本文を変えたときだけ)
 - マージで吸収したページは中身を「→ [[統合先slug]] に統合」の 1 行 (+frontmatter) に置き換えて残す (旧 slug への `[[link]]` を壊さないため)。INDEX からは吸収されたページの行を削除する
 - wiki は AI 自発更新領域なので**書き込み前のユーザ確認は不要**。直接 commit し、結果を最後に報告する
 
@@ -43,11 +49,28 @@ cd ~/.claude/wiki
 # INDEX に載っていない orphan ページ / INDEX にあるのに実体が無いリンク
 for f in */[a-z]*.md; do grep -qF "($f)" INDEX.md || echo "orphan: $f"; done
 grep -oE '\]\([a-z]+/[a-z0-9-]+\.md\)' INDEX.md | tr -d ']()' | grep -v '^category/slug\.md$' | while read -r p; do [ -f "$p" ] || echo "index-dead: $p"; done  # category/slug.md は INDEX 冒頭の記入例なので除外
-# [[link]] 切れ (slug に対応するファイルが無い)
-grep -rhoE '\[\[[a-z0-9-]+\]\]' */[a-z]*.md | sort -u | tr -d '[]' | while read -r s; do ls */"$s".md >/dev/null 2>&1 || echo "wikilink-dead: $s"; done
+# [[link]] 切れ (slug に対応するファイルが無い)。ls は alias で -l が混入しうるので使わず glob で判定する
+command grep -rhoE '\[\[[a-z0-9-]+\]\]' */[a-z]*.md | sort -u | tr -d '[]' | while read -r s; do set -- */"$s".md; [ -f "$1" ] || echo "wikilink-dead: $s"; done 2>/dev/null
+# INDEX 行の規約違反 (サマリ 80 字超 / タグ 6 個以上)
+python3 - <<'EOF'
+import re
+for i, l in enumerate(open("INDEX.md"), 1):
+    m = re.match(r"- \[.*?\]\([a-z]+/[a-z0-9-]+\.md\) — (.*)$", l.rstrip("\n"))
+    if not m: continue
+    body = m.group(1); tags = re.findall(r"\[[^\]]+\]", (re.search(r"`(\[.*\])`\s*$", body) or [None, ""])[1])
+    summary = re.sub(r"\s*`\[.*\]`\s*$", "", body)
+    if len(summary) > 80 or len(tags) > 5: print(f"index-long: L{i} summary={len(summary)} tags={len(tags)}")
+EOF
+# sources に書かれた PR のうち未マージのもの (「(close・未マージ)」注記済みの行は除外)
+for f in */[a-z]*.md; do
+  awk '/^---$/{c++; next} c==1' "$f" | awk '/^sources:/{s=1} s && /^[a-z_]+:/ && !/^sources:/{s=0} s' | command grep -v '未マージ' \
+    | command grep -oE 'github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/pull/[0-9]+' | sort -u | sed "s|^|$f |"
+done | while read -r f u; do st=$(gh pr view "https://$u" --json state -q .state 2>/dev/null || echo UNKNOWN); [ "$st" = MERGED ] || echo "source-pr-$st: $f $u"; done
 ```
 
 - frontmatter 必須フィールド (`title` / `category` / `tags` / `created` / `updated`) の欠落もチェックする
+- `index-long` は該当行のサマリ・タグを規約 (wiki CLAUDE.md の「INDEX の行」) に収まるよう書き直す。INDEX の修正は予算に数えない
+- `source-pr-CLOSED` / `source-pr-OPEN` のページは、未採用の計画を事実として書いている恐れがある。**Step 3 の陳腐化チェックで最優先に照合する**。照合して手当てしたら、その `sources` 行に `(close・未マージ)` を書き添えて以後の検出から外す (OPEN のままならまだ付けない)
 - orphan ページは INDEX に行を追加。dead link (INDEX にあるが実体が無い) は、まず LOG.md にそのページの create エントリが残っていないか確認する。**詳細な記録が残っていれば LOG.md から本文を復元する** (過去の ingest でページ本体の書き込みだけが漏れた可能性があるため)。記録が無い/復元すると内容の創作になる場合はリンクを外す (新規ページの創作はしない)
 
 ## Step 2: 統合 — 重複・近接ページのマージ / 分割 / リンク (差分中心)
@@ -68,18 +91,22 @@ Step 0 の差分ページそれぞれについて、INDEX 全体と突き合わ�
 
 ## Step 3: 陳腐化チェック — ローテーションで 8〜10 ページ
 
-1. 照合が最も古いページから 8〜10 ページを選ぶ。順序は **max(`updated`, `reviewed`) の古い順**:
+1. 8〜10 ページを選ぶ。**Step 1 の `source-pr-*` で検出したページを最優先**にし、残りの枠を照合が最も古いページで埋める。古さの順序は **max(`updated`, `reviewed`) の古い順**:
 
 ```bash
 cd ~/.claude/wiki
 for f in */[a-z]*.md; do
-  u=$(awk -F': ' '/^updated:/{print $2}' "$f"); r=$(awk -F': ' '/^reviewed:/{print $2}' "$f")
-  latest=$u; [ -n "$r" ] && [ "$r" \> "$u" ] && latest=$r
+  u=$(awk -F': ' '/^updated:/{print $2; exit}' "$f"); r=$(awk -F': ' '/^reviewed:/{print $2; exit}' "$f")
+  latest=$(printf '%s\n%s\n' "$u" "$r" | sort | tail -1)  # zsh の [ ] は \> を解釈できないので sort で比較する
   echo "$latest $f"
 done | sort | head -10
 ```
 
-2. 各ページを現実と照合する。観点: バージョン・仕様が今も正しいか (一次情報を確認)、参照先のリポジトリ構成・スクリプトが現存するか (naruta-mono の `repos/` を確認)、リンク先 PR/doc が生きているか
+2. 各ページを現実と照合する。観点:
+   - バージョン・仕様が今も正しいか (一次情報を確認)
+   - 参照先のリポジトリ構成・スクリプトが現存するか (naruta-mono の `repos/` を確認)
+   - リンク先 PR/doc が生きているか。**出典の PR がマージされたか** (未マージなら、書かれている設計が main に入っていない可能性が高い)
+   - **`[[link]]` でつながったページと主張が矛盾していないか**。誤った推奨はページ間で引用されて広がるので、1 ページの誤りを見つけたら、それを引用・前提にしているページも同じ回で確認する
 3. 結果に応じて:
    - **問題なし** → frontmatter に `reviewed: YYYY-MM-DD` を付ける (無ければ追加、あれば更新)。`updated` は触らない
    - **記述が古い** → 内容を更新し `updated` を今日にする
@@ -88,10 +115,12 @@ done | sort | head -10
 
 ## Step 4: 蒸留 — 横断「定石」ページの生成 (1 回 1 ページまで)
 
-1. INDEX のタグを集計し、**同一テーマのページが 5 件以上**あるクラスタを探す:
+1. ページの frontmatter の `tags` を集計し、**同一テーマのページが 5 件以上**あるクラスタを探す (INDEX のタグは 5 個までに絞っているので、集計には frontmatter を使う):
 
 ```bash
-grep -oE '\[[a-z0-9-]+\]' ~/.claude/wiki/INDEX.md | sort | uniq -c | sort -rn | head -15
+cd ~/.claude/wiki
+for f in */[a-z]*.md; do awk -F': ' '/^tags:/{print $2; exit}' "$f" | tr -d '[]' | tr ',' '\n' | sed 's/^ *//'; done | sort | uniq -c | sort -rn | head -20
+command grep -l '^type: distilled' */*.md  # 既存の定石ページ (同じクラスタで重複させない)
 ```
 
 2. `aws` / `terraform` / `iam` のような汎用タグはクラスタとして扱わない (テーマの解像度が粗すぎて定石にならない)。`bedrock-agentcore` / `opensearch` / `coder` のような**具体的テーマのタグ**からクラスタを選ぶ
@@ -107,7 +136,7 @@ grep -oE '\[[a-z0-9-]+\]' ~/.claude/wiki/INDEX.md | sort | uniq -c | sort -rn | 
 ```markdown
 ## [YYYY-MM-DD] dream | dreaming 実行 (第 N 回)
 
-対象: 前回以降の create X 件。統合 Y 件 / 分割 Z 件 / 相互リンク W 件 / 陳腐化チェック V 件 (更新 a・deprecated b・reviewed c) / 蒸留「<タイトル>」。
+対象: 前回以降の create X 件。統合 Y 件 / 分割 Z 件 / 相互リンク W ページ / 陳腐化チェック V 件 (更新 a・deprecated b・reviewed c) / 蒸留「<タイトル>」。予算: 本文変更 n/15・リンク追記のみ m/30。
 持ち越し: <あれば列挙、なければ「なし」>
 ```
 
@@ -120,3 +149,4 @@ grep -oE '\[[a-z0-9-]+\]' ~/.claude/wiki/INDEX.md | sort | uniq -c | sort -rn | 
 - **`updated` と `reviewed` を混ぜない**。`updated` = 内容変更、`reviewed` = 照合のみ。混ぜるとローテーションが壊れる
 - **蒸留ページを量産しない**。1 回 1 ページ厳守。定石ページ自体が重複源になったら本末転倒 (数回運用して様子を見る)
 - LOG.md は追記専用。過去エントリを書き換えない
+- シェルの `ls` alias は `-l` を混入させることがある。ファイル存在の判定は glob と `[ -f ]` で行う (wiki の `tools/ls-alias-breaks-bulk-pipeline.md`)
