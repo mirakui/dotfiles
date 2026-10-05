@@ -4,6 +4,13 @@ dotfiles.default_mode = "symlink"
 [dotfiles]
 # claude
 "~/.claude/*" = { source = "claude/*" }
+# 全プロジェクト共通の Claude 設定は naruta-mono が正本 (クラウド実行の Claude と共有するため)
+"~/.claude/CLAUDE.md" = "~/work/naruta-mono/claude-home/CLAUDE.md"
+"~/.claude/agents" = "~/work/naruta-mono/claude-home/agents"
+"~/.claude/commands" = "~/work/naruta-mono/claude-home/commands"
+"~/.claude/rules" = "~/work/naruta-mono/claude-home/rules"
+"~/.claude/skills" = "~/work/naruta-mono/claude-home/skills"
+"~/.claude/wiki" = "~/work/naruta-mono/docs/wiki"
 
 # git
 "~/.gitconfig" = "git/.gitconfig"
