@@ -1,0 +1,7 @@
+{
+  "name": "worktrees",
+  "version": "0.4.0",
+  "author": { "name": "mirakui" },
+  "description": "Show the git worktrees this session references in a pane",
+  "types": "./types/index.d.ts"
+}

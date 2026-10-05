@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "mirakui-mods",
+  "description": "Personal Claude Code mods (function-hook plugins) from mirakui's dotfiles",
+  "owner": { "name": "mirakui" },
+  "plugins": [
+    {
+      "name": "token-usage",
+      "description": "Show this session's context fill, token totals, cost and rate limits in a band above the prompt",
+      "source": "./token-usage"
+    },
+    {
+      "name": "worktrees",
+      "description": "Show the git worktrees this session references in a pane",
+      "source": "./worktrees"
+    }
+  ]
+}

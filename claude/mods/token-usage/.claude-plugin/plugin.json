@@ -1,0 +1,7 @@
+{
+  "name": "token-usage",
+  "version": "0.2.0",
+  "author": { "name": "mirakui" },
+  "description": "Show this session's context fill, token totals, cost and rate limits in a band above the prompt",
+  "types": "./types/index.d.ts"
+}
